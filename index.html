@@ -155,35 +155,45 @@ async function lerCSV(){
     renderPreviewCompleto();
 }
 
-function renderPreview(){
+function renderPreviewCompleto(){
+
     let html = `
-        <tr>
-            <th>Pedido</th>
-            <th>Cliente</th>
-            <th>Cidade</th>
-            <th>UF</th>
-            <th>Peso</th>
-            <th>Modalidade</th>
-            <th>Destino</th>
-            <th>Status</th>
-        </tr>
+    <tr>
+        <th>Pedido</th>
+        <th>Cliente CNPJ</th>
+        <th>Depositante</th>
+        <th>Destinatário</th>
+        <th>Cidade</th>
+        <th>UF</th>
+        <th>CEP</th>
+        <th>Peso</th>
+        <th>Volume</th>
+        <th>Modalidade</th>
+        <th>Status</th>
+        <th>Destino</th>
+    </tr>
     `;
 
     pedidos.slice(0,100).forEach(p => {
+
         const destino = p.resultado?.destino || "-";
-        const classe = destino === "operacao" ? "op" : "plan";
+        const cor = destino === "operacao" ? "#16a34a" : "#f59e0b";
 
         html += `
-            <tr>
-                <td>${p.os}</td>
-                <td>${p.destinatario || "-"}</td>
-                <td>${p.cidade || "-"}</td>
-                <td>${p.uf || "-"}</td>
-                <td>${p.peso_total}</td>
-                <td>${p.modalidade}</td>
-                <td><span class="badge ${classe}">${destino}</span></td>
-                <td>${p.status}</td>
-            </tr>
+        <tr>
+            <td>${p.os}</td>
+            <td>${p.cliente_cnpj || "-"}</td>
+            <td>${p.depositante || "-"}</td>
+            <td>${p.destinatario || "-"}</td>
+            <td>${p.cidade || "-"}</td>
+            <td>${p.uf || "-"}</td>
+            <td>${p.cep || "-"}</td>
+            <td>${p.peso_total}</td>
+            <td>${p.volume_total}</td>
+            <td>${p.modalidade}</td>
+            <td>${p.status}</td>
+            <td style="color:${cor};font-weight:bold">${destino}</td>
+        </tr>
         `;
     });
 
