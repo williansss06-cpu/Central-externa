@@ -145,7 +145,6 @@ async function lerCSV(){
         if(!pedido.os) continue;
 
         const decisao = classificarPedido(pedido);
-
         pedido.status = decisao.status;
         pedido.resultado = decisao;
 
@@ -153,7 +152,7 @@ async function lerCSV(){
     }
 
     log(`📦 ${pedidos.length} pedidos processados`);
-    renderPreview();
+    renderPreviewCompleto();
 }
 
 function renderPreview(){
