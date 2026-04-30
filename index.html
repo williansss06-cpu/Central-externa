@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Central Inteligente de Pedidos</title>
+
+<style>
+body{font-family:Arial;background:#0f172a;color:white;padding:30px}
+.card{background:#1e293b;padding:22px;border-radius:14px;margin-bottom:20px}
+button{padding:12px 18px;border:0;border-radius:10px;cursor:pointer;font-weight:bold}
+.btn-blue{background:#2563eb;color:white}
+.btn-green{background:#16a34a;color:white}
+.btn-purple{background:#7c3aed;color:white}
+input{padding:10px;background:white;color:#111;border-radius:8px}
+table{width:100%;border-collapse:collapse;margin-top:15px}
+th,td{border:1px solid #334155;padding:8px;font-size:13px}
+.log{color:#cbd5e1;font-size:13px;margin-top:12px}
+.badge{padding:4px 8px;border-radius:8px;font-weight:bold}
+.op{background:#16a34a}
+.plan{background:#f59e0b}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+    <h2>🧠 Central Inteligente de Pedidos</h2>
+    <p>Importa CSV, classifica automaticamente e salva no Supabase.</p>
+
+    <input type="file" id="file" accept=".csv">
+    <button class="btn-blue" onclick="lerCSV()">📂 Ler CSV</button>
+    <button class="btn-green" onclick="enviarSupabase()">🚀 Enviar para Supabase</button>
+
+    <div class="log" id="log"></div>
+</div>
+
+<div class="card">
+    <h3>📊 Preview Inteligente</h3>
+    <table id="preview"></table>
+</div>
+
+<script>
+const SUPABASE_URL = "https://gdlgceoliupjinkgunxe.supabase.co";
+const API_KEY = "COLE_SUA_ANON_PUBLIC_KEY_AQUI";
+
+let pedidos = [];
+
+function log(msg){
+    document.getElementById("log").innerHTML += msg + "<br>";
+}
+
+function toNumber(v){
+    if(!v) return 0;
+    return parseFloat(String(v).replace(",", ".").replace(/[^\d.-]/g, "")) || 0;
+}
+
+function classificarPedido(p){
+    const peso = Number(p.peso_total || 0);
+    const modalidade = String(p.modalidade || "").toLowerCase();
+    const obs = String(p.obs || "").toLowerCase();
+
+    if(modalidade.includes("aereo") || modalidade.includes("aéreo")){
+        return {
+            status: "aguardando_planejamento",
+            destino: "planejamento",
+            tipo: "aereo",
+            prioridade: 5,
+            motivo: "Pedido aéreo vai para planejamento"
+        };
+    }
+
+    if(modalidade.includes("exclusivo") || obs.includes("exclusivo")){
+        return {
+            status: "aguardando_planejamento",
+            destino: "planejamento",
+            tipo: "exclusivo",
+            prioridade: 5,
+            motivo: "Pedido exclusivo vai para planejamento"
+        };
+    }
+
+    if(peso <= 1000){
+        return {
+            status: "pronto_operacao",
+            destino: "operacao",
+            tipo: "leve",
+            prioridade: 3,
+            motivo: "Pedido leve liberado para operação"
+        };
+    }
+
+    return {
+        status: "aguardando_planejamento",
+        destino: "planejamento",
+        tipo: "pesado",
+        prioridade: 4,
+        motivo: "Pedido pesado vai para planejamento"
+    };
+}
+
+async function lerCSV(){
+    const file = document.getElementById("file").files[0];
+
+    if(!file){
+        alert("Selecione um CSV");
+        return;
+    }
+
+    const text = await file.text();
+    const linhas = text.split(/\r?\n/).filter(l => l.trim());
+
+    pedidos = [];
+
+    for(let i = 1; i < linhas.length; i++){
+        const col = linhas[i].split("\t");
+
+        const pedido = {
+            cliente_cnpj: col[0] || null,
+            os: col[1] || null,
+            cod_depositante: col[2] || null,
+            depositante: col[3] || null,
+            cnpj: col[4] || null,
+            destinatario: col[5] || null,
+            cep: col[6] || null,
+            logradouro: col[7] || null,
+            numero: col[8] || null,
+            bairro: col[9] || null,
+            cidade: col[10] || null,
+            uf: col[11] || null,
+            job: col[12] || null,
+            codigo_produto: col[13] || null,
+            descricao: col[14] || null,
+            peso_total: toNumber(col[15]),
+            altura: toNumber(col[16]),
+            largura: toNumber(col[17]),
+            profundidade: toNumber(col[18]),
+            volume_total: toNumber(col[19]),
+            obs: col[20] || null,
+            previsao_despacho: col[21] || null,
+            data_entrega: col[22] || null,
+            modalidade: col[23] || "Rodoviario",
+            status: col[24] || "novo"
+        };
+
+        if(!pedido.os) continue;
+
+        const decisao = classificarPedido(pedido);
+
+        pedido.status = decisao.status;
+        pedido.resultado = decisao;
+
+        pedidos.push(pedido);
+    }
+
+    log(`📦 ${pedidos.length} pedidos processados`);
+    renderPreview();
+}
+
+function renderPreview(){
+    let html = `
+        <tr>
+            <th>Pedido</th>
+            <th>Cliente</th>
+            <th>Cidade</th>
+            <th>UF</th>
+            <th>Peso</th>
+            <th>Modalidade</th>
+            <th>Destino</th>
+            <th>Status</th>
+        </tr>
+    `;
+
+    pedidos.slice(0,100).forEach(p => {
+        const destino = p.resultado?.destino || "-";
+        const classe = destino === "operacao" ? "op" : "plan";
+
+        html += `
+            <tr>
+                <td>${p.os}</td>
+                <td>${p.destinatario || "-"}</td>
+                <td>${p.cidade || "-"}</td>
+                <td>${p.uf || "-"}</td>
+                <td>${p.peso_total}</td>
+                <td>${p.modalidade}</td>
+                <td><span class="badge ${classe}">${destino}</span></td>
+                <td>${p.status}</td>
+            </tr>
+        `;
+    });
+
+    document.getElementById("preview").innerHTML = html;
+}
+
+async function enviarSupabase(){
+    if(!pedidos.length){
+        alert("Nenhum pedido carregado");
+        return;
+    }
+
+    log("🚀 Enviando para Supabase...");
+
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/pedidos`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "apikey": API_KEY,
+            "Authorization": "Bearer " + API_KEY,
+            "Prefer": "return=minimal"
+        },
+        body: JSON.stringify(pedidos)
+    });
+
+    if(response.ok){
+        log("✅ Pedidos salvos no Supabase");
+        alert("Pedidos enviados com sucesso");
+    }else{
+        const erro = await response.text();
+        log("❌ Erro: " + erro);
+        alert("Erro ao enviar");
+    }
+}
+</script>
+
+</body>
+</html>
