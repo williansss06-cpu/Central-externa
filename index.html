@@ -254,94 +254,113 @@
 </head>
 <body>
 <div class="container">
-  <!-- CARD SUPABASE - Configuração e salvamento -->
-  <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h3 style="font-weight: 600; display: flex; gap: 8px;">☁️ Supabase Database <span style="font-size:0.75rem; background:#e6f7f5; padding:2px 8px; border-radius:40px;">frete pro</span></h3>
-      <span id="supabaseConnStatus" class="status-msg warning-badge">⚙️ Não conectado</span>
-    </div>
-    <p style="color:#475569; margin: 8px 0 12px 0;">Configure sua conexão com o Supabase para salvar os pedidos e consumir via frete pro. As credenciais ficam salvas no navegador.</p>
-    
-    <div class="supabase-config-row">
-  <input 
-    type="text" 
-    id="supabaseUrl" 
-    placeholder="https://gdlgceoliupjinkgunxe.supabase.co" 
-    autocomplete="off"
-  >
+  <!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <input 
-  type="password" 
-  id="supabaseKey" 
-  value="sb_publishable_CG8-Cflr7Wk0QyMJJyKwdw_GmYQ3FFn"
-  autocomplete="off"
-/>
-
-  <input 
-    type="text" 
-    id="supabaseTable" 
-    value="pedidos" 
-    style="flex:0.8;"
-  >
-</div>
-    
-    <div class="flex-buttons">
-      <button id="saveSupabaseConfigBtn">💾 Salvar configuração</button>
-      <button id="testSupabaseBtn" style="background:#334155;">🔌 Testar conexão</button>
-      <button id="sendToSupabaseBtn" class="btn-supabase">📤 Enviar pedidos para Supabase</button>
-    </div>
-    <div id="supabaseFeedback" class="log-simple" style="margin-top: 12px; background:#f1f5f9;">
-      ⚙️ Configure URL e chave anônima acima para habilitar salvamento.
-    </div>
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h3>☁️ Supabase Database</h3>
+    <span id="connStatus" style="font-size:12px;">⚙️ Não conectado</span>
   </div>
 
-  <!-- CARD PRINCIPAL - Consulta e CSV -->
-  <div class="card">
-    <div class="header">
-      <h1>📋 Meus Pedidos</h1>
-      <div class="badge-cliente">Área do Cliente · CSV + Ferramentas</div>
-    </div>
-    <p style="color:#475569; margin-bottom: 0.75rem;">Importe seu arquivo CSV com os pedidos e visualize todas as informações sem alterações. Utilize os botões para recarregar ou limpar a lista.</p>
-    
-    <div class="toolbar">
-      <input type="file" id="csvFileInput" accept=".csv, .txt" />
-      <button id="btnCarregar">📂 Carregar pedidos</button>
-      <button id="btnRecarregar" title="Recarrega o último arquivo carregado">🔄 Recarregar</button>
-      <button id="btnLimparTudo" class="btn-danger">🗑️ Limpar pedidos</button>
-    </div>
-    
-    <div class="info-status">
-      <span id="statusTexto">📄 Nenhum arquivo carregado</span>
-      <span class="contador" id="contadorLinhas">0 pedidos</span>
-    </div>
-    <div id="logMessage" class="log-simple">✅ Pronto. Selecione um CSV e clique em "Carregar pedidos".</div>
+  <div style="margin-top:10px; display:flex; gap:10px;">
+    <input id="url" style="flex:2;" value="https://gdlgceoliupjinkgunxe.supabase.co">
+    <input id="key" style="flex:3;" value="sb_publishable_wOUtKsTrZGibGg5_VRT7Bg_UOfSFo0_">
+    <input id="table" style="flex:1;" value="pedidos">
   </div>
 
-  <!-- TABELA DE PEDIDOS -->
-  <div class="card" style="padding: 0; overflow: hidden;">
-    <div style="padding: 1rem 1.5rem 0 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-      <h3 style="font-weight: 600;">📌 Pedidos importados</h3>
-      <span id="filtroInfo" style="font-size:12px; color:#3b82f6;"></span>
-    </div>
-    <div class="table-wrapper" id="tableWrapper">
-      <table id="pedidosTable">
-        <thead id="tHead"></thead>
-        <tbody id="tBody">
-          <tr><td colspan="20" class="empty-message">Nenhum pedido carregado ainda. Faça upload do CSV.</td></tr>
-        </tbody>
-      80
-    </div>
-    <div style="padding: 0.8rem 1.5rem; border-top: 1px solid #e2e8f0; font-size: 12px; color:#5b6e8c; display: flex; gap: 16px;">
-      <span>🔍 Dica: O CSV deve conter as colunas padronizadas (OS, Cliente - CNPJ, CEP, etc).</span>
-      <span>📦 Ao enviar para Supabase, o sistema faz UPSERT automático pela coluna OS (evita duplicados).</span>
-    </div>
+  <div style="margin-top:10px; display:flex; gap:10px;">
+    <button onclick="salvar()">💾 Salvar</button>
+    <button onclick="testar()">🔌 Testar</button>
+    <button onclick="enviar()">📤 Enviar</button>
   </div>
-  <footer>
-    Informações atualizadas conforme arquivo enviado • Dados salvos no Supabase para consumo do Frete Pro
-  </footer>
+
+  <div id="log" style="margin-top:10px; font-size:13px;">Pronto</div>
 </div>
 
 <script>
+let supabaseClient = null;
+
+// ==========================
+// SALVAR CONFIG
+// ==========================
+function salvar() {
+  const url = document.getElementById('url').value.trim();
+  const key = document.getElementById('key').value.trim();
+  const table = document.getElementById('table').value.trim();
+
+  localStorage.setItem('url', url);
+  localStorage.setItem('key', key);
+  localStorage.setItem('table', table);
+
+  document.getElementById('log').innerText = "✅ Configuração salva";
+}
+
+// ==========================
+// TESTAR CONEXÃO
+// ==========================
+async function testar() {
+  try {
+    const url = localStorage.getItem('url');
+    const key = localStorage.getItem('key');
+    const table = localStorage.getItem('table');
+
+    if (!url || !key) throw new Error("Preencha URL e KEY");
+
+    supabaseClient = window.supabase.createClient(url, key);
+
+    const { error } = await supabaseClient.from(table).select('*').limit(1);
+
+    if (error) throw error;
+
+    document.getElementById('connStatus').innerText = "🟢 Conectado";
+    document.getElementById('log').innerText = "✅ Conexão OK";
+
+  } catch (e) {
+    document.getElementById('log').innerText = "❌ " + e.message;
+  }
+}
+
+// ==========================
+// ENVIAR PEDIDOS
+// ==========================
+async function enviar() {
+  try {
+    if (!supabaseClient) throw new Error("Conecte primeiro");
+
+    if (!window.pedidos || window.pedidos.length === 0) {
+      throw new Error("Nenhum pedido carregado");
+    }
+
+    const table = localStorage.getItem('table');
+
+    const { error } = await supabaseClient
+      .from(table)
+      .insert(window.pedidos);
+
+    if (error) throw error;
+
+    document.getElementById('log').innerText =
+      "🚀 " + window.pedidos.length + " pedidos enviados";
+
+  } catch (e) {
+    document.getElementById('log').innerText = "❌ " + e.message;
+  }
+}
+
+// ==========================
+// AUTO LOAD
+// ==========================
+window.onload = () => {
+  const url = localStorage.getItem('url');
+  const key = localStorage.getItem('key');
+  const table = localStorage.getItem('table');
+
+  if (url) document.getElementById('url').value = url;
+  if (key) document.getElementById('key').value = key;
+  if (table) document.getElementById('table').value = table;
+};
+</script>
   // ============================================================
   // CONFIGURAÇÕES E MAPEAMENTO SUPABASE
   // ============================================================
