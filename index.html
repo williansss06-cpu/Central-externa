@@ -191,36 +191,36 @@ function renderPreviewCompleto() {
 
         html += `
         <tr>
-            <td>${p["Cliente - CNPJ"] || ""}</td>
-            <td>${p["Pedido"] || ""}</td>
-            <td>${p["COD. DEPOSITANTE"] || ""}</td>
-            <td>${p["DEPOSITANTE"] || ""}</td>
-            <td>${p["CNPJ"] || ""}</td>
-            <td>${p["DESTINATARIO"] || ""}</td>
-            <td>${p["CEP"] || ""}</td>
-            <td>${p["LOGRADOURO"] || ""}</td>
-            <td>${p["NUMERO"] || ""}</td>
-            <td>${p["BAIRRO"] || ""}</td>
-            <td>${p["CIDADE"] || ""}</td>
-            <td>${p["UF"] || ""}</td>
-            <td>${p["Job"] || ""}</td>
-            <td>${p["CODIGO PRODUTO"] || ""}</td>
-            <td>${p["DESCRIÇÃO"] || ""}</td>
-            <td>${p["PESO BRUTO"] || ""}</td>
-            <td>${p["ALTURA"] || ""}</td>
-            <td>${p["LARGURA"] || ""}</td>
-            <td>${p["PROFUNDIDADE"] || ""}</td>
-            <td>${p["METROCUBICO"] || ""}</td>
-            <td>${p["OBS"] || ""}</td>
-            <td>${p["PREVISÃO DE DESPACHO"] || ""}</td>
-            <td>${p["Data da Entrega"] || ""}</td>
-            <td>${p["MODALIDADE"] || ""}</td>
-            <td>${p["STATUS"] || ""}</td>
+            <td>${p.cliente_cnpj || ""}</td>
+            <td>${p.os || ""}</td>
+            <td>${p.cod_depositante || ""}</td>
+            <td>${p.depositante || ""}</td>
+            <td>${p.cnpj || ""}</td>
+            <td>${p.destinatario || ""}</td>
+            <td>${p.cep || ""}</td>
+            <td>${p.logradouro || ""}</td>
+            <td>${p.numero || ""}</td>
+            <td>${p.bairro || ""}</td>
+            <td>${p.cidade || ""}</td>
+            <td>${p.uf || ""}</td>
+            <td>${p.job || ""}</td>
+            <td>${p.codigo_produto || ""}</td>
+            <td>${p.descricao || ""}</td>
+            <td>${p.peso_total || ""}</td>
+            <td>${p.altura || ""}</td>
+            <td>${p.largura || ""}</td>
+            <td>${p.profundidade || ""}</td>
+            <td>${p.volume_total || ""}</td>
+            <td>${p.obs || ""}</td>
+            <td>${p.previsao_despacho || ""}</td>
+            <td>${p.data_entrega || ""}</td>
+            <td>${p.modalidade || ""}</td>
+            <td>${p.status || ""}</td>
         </tr>
         `;
     });
 
-    document.querySelector("#previewTable").innerHTML = html;
+    document.querySelector("#preview").innerHTML = html;
 }
 async function enviarSupabase(){
     if(!pedidos.length){
