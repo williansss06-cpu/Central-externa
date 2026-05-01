@@ -1,256 +1,551 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Central Inteligente de Pedidos</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Consulta de Pedidos | Cliente</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-<style>
-body{font-family:Arial;background:#0f172a;color:white;padding:30px}
-.card{background:#1e293b;padding:22px;border-radius:14px;margin-bottom:20px}
-button{padding:12px 18px;border:0;border-radius:10px;cursor:pointer;font-weight:bold}
-.btn-blue{background:#2563eb;color:white}
-.btn-green{background:#16a34a;color:white}
-.btn-purple{background:#7c3aed;color:white}
-input{padding:10px;background:white;color:#111;border-radius:8px}
-table{width:100%;border-collapse:collapse;margin-top:15px}
-th,td{border:1px solid #334155;padding:8px;font-size:13px}
-.log{color:#cbd5e1;font-size:13px;margin-top:12px}
-.badge{padding:4px 8px;border-radius:8px;font-weight:bold}
-.op{background:#16a34a}
-.plan{background:#f59e0b}
-</style>
+    body {
+      background: #f1f5f9;
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      padding: 2rem 1.5rem;
+      color: #0f172a;
+    }
+
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    /* CARD principal */
+    .card {
+      background: white;
+      border-radius: 1.5rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.02);
+      padding: 1.8rem;
+      margin-bottom: 2rem;
+      transition: all 0.2s;
+    }
+
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 1.7rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #1e293b, #2d3a5e);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      letter-spacing: -0.3px;
+    }
+
+    .badge-cliente {
+      background: #e2e8f0;
+      padding: 0.3rem 1rem;
+      border-radius: 40px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #1e293b;
+    }
+
+    .upload-area {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem;
+      margin: 1.5rem 0 0.5rem 0;
+    }
+
+    input[type="file"] {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 60px;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    input[type="file"]:hover {
+      border-color: #3b82f6;
+      background: #ffffff;
+    }
+
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.5rem;
+      border-radius: 60px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+
+    .info-status {
+      margin-top: 1rem;
+      background: #f1f5f9;
+      border-radius: 1rem;
+      padding: 0.8rem 1.2rem;
+      font-size: 0.85rem;
+      color: #334155;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .contador {
+      font-weight: 700;
+      background: #e6f0ff;
+      padding: 0.2rem 0.8rem;
+      border-radius: 40px;
+      color: #1e40af;
+    }
+
+    /* tabela responsiva */
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 1rem;
+      border: 1px solid #e2e8f0;
+      background: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      min-width: 1300px;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #1e293b;
+      font-weight: 600;
+      padding: 12px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      position: sticky;
+      top: 0;
+      white-space: nowrap;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #f1f5f9;
+      white-space: nowrap;
+      color: #0f172a;
+    }
+
+    tr:hover td {
+      background-color: #fefce8;
+    }
+
+    .empty-message {
+      text-align: center;
+      padding: 3rem;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+
+    .log-simple {
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: #475569;
+      background: #f1f5f9;
+      padding: 0.5rem 1rem;
+      border-radius: 60px;
+      display: inline-block;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.7rem;
+      color: #94a3b8;
+      margin-top: 2rem;
+    }
+  </style>
 </head>
-
 <body>
+<div class="container">
+  <div class="card">
+    <div class="header">
+      <h1>📋 Meus Pedidos</h1>
+      <div class="badge-cliente">Área do Cliente · Consulta direta</div>
+    </div>
+    <p style="color:#475569; margin-bottom: 0.75rem;">Importe seu arquivo CSV com os pedidos e visualize todas as informações sem alterações.</p>
+    
+    <div class="upload-area">
+      <input type="file" id="csvFileInput" accept=".csv, .txt, .xlsx?não, apenas CSV" />
+      <button id="btnCarregar">📂 Carregar pedidos</button>
+    </div>
+    
+    <div class="info-status" id="statusBar">
+      <span>📄 Nenhum arquivo carregado</span>
+      <span class="contador" id="contadorLinhas">0 pedidos</span>
+    </div>
+    <div id="logMessage" class="log-simple">✅ Pronto. Selecione um CSV e clique em "Carregar pedidos".</div>
+  </div>
 
-<div class="card">
-    <h2>🧠 Central Inteligente de Pedidos</h2>
-    <p>Importa CSV, classifica automaticamente e salva no Supabase.</p>
-
-    <input type="file" id="file" accept=".csv">
-    <button class="btn-blue" onclick="lerCSV()">📂 Ler CSV</button>
-    <button class="btn-green" onclick="enviarSupabase()">🚀 Enviar para Supabase</button>
-
-    <div class="log" id="log"></div>
-</div>
-
-<div class="card">
-    <h3>📊 Preview Inteligente</h3>
-    <table id="preview"></table>
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 1rem 1.5rem 0 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="font-weight: 600;">📌 Pedidos importados</h3>
+      <span id="filtroInfo" style="font-size:12px; color:#3b82f6;"></span>
+    </div>
+    <div class="table-wrapper" id="tableWrapper">
+      <table id="pedidosTable">
+        <thead id="tHead"></thead>
+        <tbody id="tBody">
+          <tr><td colspan="20" class="empty-message">Nenhum pedido carregado ainda. Faça upload do CSV.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="padding: 0.8rem 1.5rem; border-top: 1px solid #e2e8f0; font-size: 12px; color:#5b6e8c; display: flex; gap: 16px;">
+      <span>🔍 Dica: O CSV deve conter as colunas abaixo na primeira linha (separador automático)</span>
+    </div>
+  </div>
+  <footer>
+    Informações atualizadas conforme arquivo enviado • Nenhum dado é armazenado externamente
+  </footer>
 </div>
 
 <script>
-const SUPABASE_URL = "https://gdlgceoliupjinkgunxe.supabase.co";
-const API_KEY = "COLE_SUA_ANON_PUBLIC_KEY_AQUI";
+  // Mapeamento esperado das colunas para exibição (igualmente ordenado)
+  const COLUNAS_ESPERADAS = [
+    "Cliente - CNPJ", "OS", "COD. DEPOSITANTE", "DEPOSITANTE", "CNPJ", "DESTINATARIO", 
+    "CEP", "LOGRADOURO", "NUMERO", "BAIRRO", "CIDADE", "UF", "Job", "CODIGO PRODUTO", 
+    "PRODUTO3", "PESO BRUTO", "ALTURA", "LARGURA", "PROFUNDIDADE", "METROCUBICO", 
+    "OBS", "Data da Entrega", "MODALIDADE"
+  ];
 
-let pedidos = [];
+  let dadosPedidos = [];      // armazena array de objetos com os valores
+  let cabecalhosOriginais = []; // guarda os headers reais do CSV
 
-function log(msg){
-    document.getElementById("log").innerHTML += msg + "<br>";
-}
+  // DOM elements
+  const fileInput = document.getElementById("csvFileInput");
+  const btnCarregar = document.getElementById("btnCarregar");
+  const tHead = document.getElementById("tHead");
+  const tBody = document.getElementById("tBody");
+  const contadorSpan = document.getElementById("contadorLinhas");
+  const statusBarSpan = document.querySelector("#statusBar span:first-child");
+  const logMsgDiv = document.getElementById("logMessage");
 
-function toNumber(v){
-    if(!v) return 0;
-    return parseFloat(String(v).replace(",", ".").replace(/[^\d.-]/g, "")) || 0;
-}
+  function setLogMessage(msg, isError = false) {
+    logMsgDiv.innerHTML = isError ? `❌ ${msg}` : `✅ ${msg}`;
+    logMsgDiv.style.color = isError ? "#b91c1c" : "#2c5f2d";
+    logMsgDiv.style.background = isError ? "#fee2e2" : "#e6f7e6";
+    setTimeout(() => {
+      if(!isError) {
+        // depois de 2s, volta ao normal só se não houver erro crítico
+        if(logMsgDiv.innerHTML.includes("✅")) {
+          setTimeout(() => {
+            if(logMsgDiv.innerHTML.includes("✅") && !logMsgDiv.innerHTML.includes("❌"))
+              logMsgDiv.style.background = "#f1f5f9";
+          }, 2500);
+        }
+      }
+    }, 2000);
+  }
 
-function classificarPedido(p){
-    const peso = Number(p.peso_total || 0);
-    const modalidade = String(p.modalidade || "").toLowerCase();
-    const obs = String(p.obs || "").toLowerCase();
+  // Detecta delimitador (vírgula, ponto e virgula, tab)
+  function detectDelimiter(firstLine) {
+    if (!firstLine) return ",";
+    const delimiters = [",", ";", "\t"];
+    let bestDelim = ",";
+    let maxCount = 0;
+    for (let delim of delimiters) {
+      const regex = new RegExp(`\\${delim}`, "g");
+      const count = (firstLine.match(regex) || []).length;
+      if (count > maxCount) {
+        maxCount = count;
+        bestDelim = delim;
+      }
+    }
+    return bestDelim;
+  }
 
-    if(modalidade.includes("aereo") || modalidade.includes("aéreo")){
-        return {
-            status: "aguardando_planejamento",
-            destino: "planejamento",
-            tipo: "aereo",
-            prioridade: 5,
-            motivo: "Pedido aéreo vai para planejamento"
-        };
+  // Limpa caracteres de aspas no início/fim
+  function cleanCell(value) {
+    if (typeof value !== "string") return value;
+    return value.replace(/^["']|["']$/g, '').trim();
+  }
+
+  // Processa arquivo CSV e exibe sem nenhuma classificação adicional
+  async function processAndDisplayCSV(file) {
+    if (!file) {
+      setLogMessage("Selecione um arquivo CSV primeiro.", true);
+      return false;
     }
 
-    if(modalidade.includes("exclusivo") || obs.includes("exclusivo")){
-        return {
-            status: "aguardando_planejamento",
-            destino: "planejamento",
-            tipo: "exclusivo",
-            prioridade: 5,
-            motivo: "Pedido exclusivo vai para planejamento"
-        };
-    }
+    setLogMessage(`Lendo arquivo: ${file.name} ...`);
+    
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const rawText = e.target.result;
+          const linhas = rawText.split(/\r?\n/).filter(line => line.trim().length > 0);
+          if (linhas.length < 2) {
+            throw new Error("Arquivo vazio ou sem dados válidos (pelo menos cabeçalho + 1 linha)");
+          }
 
-    if(peso <= 1000){
-        return {
-            status: "pronto_operacao",
-            destino: "operacao",
-            tipo: "leve",
-            prioridade: 3,
-            motivo: "Pedido leve liberado para operação"
-        };
-    }
+          // Detectar separador
+          const delimiter = detectDelimiter(linhas[0]);
+          setLogMessage(`Separador detectado: ${delimiter === "\t" ? "TAB" : delimiter === ";" ? "PONTO E VÍRGULA" : "VÍRGULA"}`);
 
-    return {
-        status: "aguardando_planejamento",
-        destino: "planejamento",
-        tipo: "pesado",
-        prioridade: 4,
-        motivo: "Pedido pesado vai para planejamento"
-    };
-}
+          // Processar cabeçalho (primeira linha)
+          const rawHeaders = linhas[0].split(delimiter).map(h => cleanCell(h));
+          
+          // Mapear índices: comparar com COLUNAS_ESPERADAS para exibir na ordem correta
+          // Mas vamos preservar todos os dados, e exibir conforme ordem das colunas esperadas (ou as que existem)
+          const headerIndexMap = {};
+          rawHeaders.forEach((h, idx) => {
+            // normalização: remove espaços extras e case-insensitive match
+            let normalized = h.trim();
+            headerIndexMap[normalized] = idx;
+          });
 
-async function lerCSV(){
-    const file = document.getElementById("file").files[0];
+          // Construir lista de colunas que serão exibidas (usando a ordem de COLUNAS_ESPERADAS)
+          const colunasExibir = [];
+          const indicesExibir = [];
+          for (let colNome of COLUNAS_ESPERADAS) {
+            // Busca exata ou aproximada (caso tenha diferença de espaços, acentos? Vamos tentar match simples)
+            let foundIndex = -1;
+            for (let [key, idxVal] of Object.entries(headerIndexMap)) {
+              if (key.toLowerCase() === colNome.toLowerCase() || key.replace(/\s/g,'') === colNome.replace(/\s/g,'')) {
+                foundIndex = idxVal;
+                break;
+              }
+            }
+            // se não encontrar, considera que a coluna não existe no CSV
+            if (foundIndex !== -1) {
+              colunasExibir.push(colNome);
+              indicesExibir.push(foundIndex);
+            } else {
+              // Coluna não presente no CSV, iremos mostrar vazio
+              colunasExibir.push(colNome);
+              indicesExibir.push(-1);
+            }
+          }
 
-    if(!file){
-        alert("Selecione um CSV");
-        return;
-    }
+          // Armazenar cabeçalhos para a tabela
+          cabecalhosOriginais = colunasExibir;
 
-    const text = await file.text();
-    const linhas = text.split(/\r?\n/).filter(l => l.trim());
-
-    pedidos = [];
-
-    for(let i = 1; i < linhas.length; i++){
-        const col = linhas[i].split("\t");
-
-        const pedido = {
-            cliente_cnpj: col[0] || null,
-            os: col[1] || null,
-            cod_depositante: col[2] || null,
-            depositante: col[3] || null,
-            cnpj: col[4] || null,
-            destinatario: col[5] || null,
-            cep: col[6] || null,
-            logradouro: col[7] || null,
-            numero: col[8] || null,
-            bairro: col[9] || null,
-            cidade: col[10] || null,
-            uf: col[11] || null,
-            job: col[12] || null,
-            codigo_produto: col[13] || null,
-            descricao: col[14] || null,
-            peso_total: toNumber(col[15]),
-            altura: toNumber(col[16]),
-            largura: toNumber(col[17]),
-            profundidade: toNumber(col[18]),
-            volume_total: toNumber(col[19]),
-            obs: col[20] || null,
-            previsao_despacho: col[21] || null,
-            data_entrega: col[22] || null,
-            modalidade: col[23] || "Rodoviario",
-            status: col[24] || "novo"
-        };
-
-        if(!pedido.os) continue;
-
-        const decisao = classificarPedido(pedido);
-        pedido.status = decisao.status;
-        pedido.resultado = decisao;
-
-        pedidos.push(pedido);
-    }
-
-    log(`📦 ${pedidos.length} pedidos processados`);
-    renderPreviewCompleto();
-}
-
-function renderPreviewCompleto() {
-
-    let html = `
-    <tr>
-        <th>Cliente CNPJ</th>
-        <th>Pedido</th>
-        <th>COD. DEPOSITANTE</th>
-        <th>DEPOSITANTE</th>
-        <th>CNPJ</th>
-        <th>DESTINATARIO</th>
-        <th>CEP</th>
-        <th>LOGRADOURO</th>
-        <th>NUMERO</th>
-        <th>BAIRRO</th>
-        <th>CIDADE</th>
-        <th>UF</th>
-        <th>Job</th>
-        <th>CODIGO PRODUTO</th>
-        <th>DESCRIÇÃO</th>
-        <th>PESO BRUTO</th>
-        <th>ALTURA</th>
-        <th>LARGURA</th>
-        <th>PROFUNDIDADE</th>
-        <th>METROCUBICO</th>
-        <th>OBS</th>
-        <th>PREVISÃO DE DESPACHO</th>
-        <th>DATA ENTREGA</th>
-        <th>MODALIDADE</th>
-        <th>STATUS</th>
-    </tr>
-    `;
-
-    pedidos.slice(0,100).forEach(p => {
-
-        html += `
-        <tr>
-            <td>${p.cliente_cnpj || ""}</td>
-            <td>${p.os || ""}</td>
-            <td>${p.cod_depositante || ""}</td>
-            <td>${p.depositante || ""}</td>
-            <td>${p.cnpj || ""}</td>
-            <td>${p.destinatario || ""}</td>
-            <td>${p.cep || ""}</td>
-            <td>${p.logradouro || ""}</td>
-            <td>${p.numero || ""}</td>
-            <td>${p.bairro || ""}</td>
-            <td>${p.cidade || ""}</td>
-            <td>${p.uf || ""}</td>
-            <td>${p.job || ""}</td>
-            <td>${p.codigo_produto || ""}</td>
-            <td>${p.descricao || ""}</td>
-            <td>${p.peso_total || ""}</td>
-            <td>${p.altura || ""}</td>
-            <td>${p.largura || ""}</td>
-            <td>${p.profundidade || ""}</td>
-            <td>${p.volume_total || ""}</td>
-            <td>${p.obs || ""}</td>
-            <td>${p.previsao_despacho || ""}</td>
-            <td>${p.data_entrega || ""}</td>
-            <td>${p.modalidade || ""}</td>
-            <td>${p.status || ""}</td>
-        </tr>
-        `;
+          // Processar linhas de dados
+          const pedidos = [];
+          for (let i = 1; i < linhas.length; i++) {
+            const linha = linhas[i];
+            if (!linha.trim()) continue;
+            
+            // Dividir respeitando o delimitador (simples, sem considerar aspas internas complexas)
+            let partes = linha.split(delimiter);
+            partes = partes.map(p => cleanCell(p));
+            
+            // Criar objeto usando as colunas esperadas
+            const rowData = {};
+            for (let j = 0; j < colunasExibir.length; j++) {
+              const idxOrig = indicesExibir[j];
+              if (idxOrig !== -1 && idxOrig < partes.length) {
+                rowData[colunasExibir[j]] = partes[idxOrig];
+              } else {
+                rowData[colunasExibir[j]] = "";
+              }
+            }
+            
+            // Verifica se pelo menos a coluna "OS" (número do pedido) tem valor, caso contrário pode ignorar (opcional)
+            if (rowData["OS"] && rowData["OS"].toString().trim() !== "") {
+              pedidos.push(rowData);
+            } else {
+              // Aceita mesmo sem OS? para não perder dados, mas damos um aviso sutil
+              if (rowData["Cliente - CNPJ"] || rowData["DESTINATARIO"]) {
+                pedidos.push(rowData);
+              }
+            }
+          }
+          
+          if (pedidos.length === 0) {
+            throw new Error("Nenhum pedido válido encontrado. Verifique o formato do CSV (colunas esperadas: OS, Cliente - CNPJ, etc).");
+          }
+          
+          dadosPedidos = pedidos;
+          renderizarTabela(dadosPedidos);
+          
+          const total = dadosPedidos.length;
+          contadorSpan.innerText = `${total} pedido${total !== 1 ? 's' : ''}`;
+          statusBarSpan.innerHTML = `📁 ${file.name} · ${total} registros`;
+          setLogMessage(`Carregado com sucesso! ${total} pedidos importados.`);
+          resolve(true);
+        } catch (err) {
+          setLogMessage(`Erro: ${err.message}`, true);
+          console.error(err);
+          reject(err);
+        }
+      };
+      reader.onerror = () => {
+        setLogMessage("Erro na leitura do arquivo.", true);
+        reject(new Error("Falha ao ler o arquivo"));
+      };
+      reader.readAsText(file, "UTF-8");
     });
+  }
 
-    document.querySelector("#preview").innerHTML = html;
-}
-async function enviarSupabase(){
-    if(!pedidos.length){
-        alert("Nenhum pedido carregado");
-        return;
+  // Renderiza a tabela com todos os dados, sem adicionar colunas extras de classificação
+  function renderizarTabela(pedidosArray) {
+    if (!pedidosArray || pedidosArray.length === 0) {
+      tHead.innerHTML = "";
+      tBody.innerHTML = `<tr><td colspan="20" class="empty-message">Nenhum pedido corresponde ao filtro ou arquivo vazio</td></tr>`;
+      return;
     }
-
-    log("🚀 Enviando para Supabase...");
-
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/pedidos`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "apikey": API_KEY,
-            "Authorization": "Bearer " + API_KEY,
-            "Prefer": "return=minimal"
-        },
-        body: JSON.stringify(pedidos)
+    
+    // Usar cabeçalhos armazenados (colunas esperadas que existem no CSV)
+    const colunas = cabecalhosOriginais.length ? cabecalhosOriginais : COLUNAS_ESPERADAS;
+    
+    // Montar cabeçalho da tabela
+    tHead.innerHTML = `<tr>${colunas.map(col => `<th>${escapeHtml(col)}</th>`).join('')}</tr>`;
+    
+    // Montar corpo
+    const fragment = document.createDocumentFragment();
+    const tbodyRows = [];
+    
+    for (let pedido of pedidosArray) {
+      const tr = document.createElement('tr');
+      for (let col of colunas) {
+        const td = document.createElement('td');
+        let valor = pedido[col] !== undefined && pedido[col] !== null ? pedido[col] : "";
+        // tratamento especial para valores numéricos manter formatação simples
+        if (typeof valor === 'string' && valor.length > 50) {
+          valor = valor.substring(0, 47) + "...";
+        }
+        td.textContent = valor || "—";
+        td.title = (pedido[col] || "") !== "" ? pedido[col] : "vazio";
+        tr.appendChild(td);
+      }
+      tbodyRows.push(tr);
+    }
+    
+    // Limpar e adicionar linhas
+    tBody.innerHTML = "";
+    for (let row of tbodyRows) {
+      tBody.appendChild(row);
+    }
+    
+    // Adicionar scroll sutil caso tabela seja muito grande
+    const wrapper = document.querySelector('.table-wrapper');
+    if (wrapper) wrapper.scrollLeft = 0;
+  }
+  
+  // Função auxiliar para escapar HTML seguro
+  function escapeHtml(str) {
+    if (!str) return "";
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
     });
-
-    if(response.ok){
-        log("✅ Pedidos salvos no Supabase");
-        alert("Pedidos enviados com sucesso");
-    }else{
-        const erro = await response.text();
-        log("❌ Erro: " + erro);
-        alert("Erro ao enviar");
+  }
+  
+  // Evento de clique no botão carregar
+  async function carregarArquivo() {
+    const file = fileInput.files[0];
+    if (!file) {
+      setLogMessage("Por favor, selecione um arquivo CSV.", true);
+      return;
     }
-}
+    
+    // Aceita apenas arquivos CSV / text / ou .txt
+    if (!file.name.match(/\.(csv|txt)$/i) && file.type !== "text/csv" && !file.type.includes("csv")) {
+      setLogMessage("Formato não suportado. Envie um arquivo .csv ou .txt com separador vírgula, ponto-e-vírgula ou TAB.", true);
+      return;
+    }
+    
+    // Limpa estado anterior antes de carregar novo
+    dadosPedidos = [];
+    cabecalhosOriginais = [];
+    await processAndDisplayCSV(file);
+  }
+  
+  // Adicionar evento de arrastar e soltar? Melhorias opcionais: permitir drag & drop?
+  function setupDragAndDrop() {
+    const cardDrop = document.querySelector('.card');
+    if (!cardDrop) return;
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      cardDrop.addEventListener(eventName, preventDefaults, false);
+    });
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    ['dragenter', 'dragover'].forEach(eventName => {
+      cardDrop.addEventListener(eventName, highlight, false);
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+      cardDrop.addEventListener(eventName, unhighlight, false);
+    });
+    function highlight() {
+      cardDrop.style.border = "2px dashed #3b82f6";
+      cardDrop.style.background = "#f8fafd";
+    }
+    function unhighlight() {
+      cardDrop.style.border = "";
+      cardDrop.style.background = "";
+    }
+    cardDrop.addEventListener('drop', handleDrop, false);
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length) {
+        fileInput.files = files;
+        carregarArquivo();
+      }
+      unhighlight();
+    }
+  }
+  
+  // Inicializar busca/filtro? O cliente não pediu regras, mas um simples campo de pesquisa pode ajudar sem alterar regras de negócio.
+  // Como não pediu filtro para não poluir, vou manter só exibição. Mas uma busca rápida pode ser útil.
+  // Decidi adicionar um pequeno campo de filtro por palavra-chave (opcional, sem interferir na classificação)
+  // Porém, o pedido original é apenas informações dos pedidos. Vou manter bem minimalista, sem filtro adicional, mas vou garantir que nenhuma automação extra aconteça.
+  
+  // Inicialização e pequeno helper
+  btnCarregar.addEventListener("click", carregarArquivo);
+  
+  // Caso o usuário tecle Enter no file input? não necessário
+  window.addEventListener("load", () => {
+    setupDragAndDrop();
+    // Preencher demonstração apenas se quiser sample? sem dados automáticos para evitar confusão
+    setLogMessage("Carregue um CSV com as colunas listadas.");
+    // Mostrar exemplo das colunas esperadas como tooltip opcional
+    const hintBox = document.querySelector("footer");
+    if(hintBox) {
+      hintBox.title = "Formato aceito: separador vírgula, ponto e vírgula ou TAB. Colunas: Cliente - CNPJ, OS, COD. DEPOSITANTE, DEPOSITANTE, CNPJ, DESTINATARIO, CEP, LOGRADOURO, NUMERO, BAIRRO, CIDADE, UF, Job, CODIGO PRODUTO, PRODUTO3, PESO BRUTO, ALTURA, LARGURA, PROFUNDIDADE, METROCUBICO, OBS, Data da Entrega, MODALIDADE";
+    }
+  });
 </script>
-
 </body>
 </html>
