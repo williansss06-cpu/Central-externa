@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Consulta de Pedidos | Cliente + Ferramentas</title>
+  <title>Consulta de Pedidos + Supabase | Cliente e Frete Pro</title>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * {
       margin: 0;
@@ -61,7 +63,7 @@
       color: #1e293b;
     }
 
-    /* TOOLBAR com botões (melhoria estilo Supabase) */
+    /* TOOLBAR com botões */
     .toolbar {
       display: flex;
       flex-wrap: wrap;
@@ -111,7 +113,13 @@
     }
     .btn-danger:hover {
       background: #b91c1c;
-      transform: translateY(-1px);
+    }
+
+    .btn-supabase {
+      background: #0d9488;
+    }
+    .btn-supabase:hover {
+      background: #0f766e;
     }
 
     .info-status {
@@ -135,7 +143,6 @@
       color: #1e40af;
     }
 
-    /* tabela responsiva */
     .table-wrapper {
       overflow-x: auto;
       border-radius: 1rem;
@@ -156,8 +163,6 @@
       font-weight: 600;
       padding: 12px 10px;
       border-bottom: 1px solid #e2e8f0;
-      position: sticky;
-      top: 0;
       white-space: nowrap;
       font-size: 0.75rem;
       text-transform: uppercase;
@@ -183,26 +188,114 @@
     }
 
     .log-simple {
-      margin-top: 1rem;
+      margin-top: 0.5rem;
       font-size: 0.8rem;
       color: #475569;
       background: #f1f5f9;
       padding: 0.5rem 1rem;
       border-radius: 60px;
-      display: inline-block;
       transition: 0.1s;
+      display: inline-block;
     }
 
+    .supabase-config-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-top: 0.8rem;
+      margin-bottom: 1rem;
+    }
+    .supabase-config-row input {
+      flex: 1 1 200px;
+      padding: 10px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 60px;
+      font-size: 0.85rem;
+      background: #fff;
+      transition: 0.2s;
+    }
+    .supabase-config-row input:focus {
+      outline: none;
+      border-color: #0d9488;
+      box-shadow: 0 0 0 2px rgba(13,148,136,0.2);
+    }
+    .flex-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .status-msg {
+      font-size: 0.8rem;
+      padding: 0.3rem 0.8rem;
+      border-radius: 40px;
+    }
+    .warning-badge {
+      background: #fef9c3;
+      color: #854d0e;
+    }
+    .success-badge {
+      background: #d1fae5;
+      color: #065f46;
+    }
     footer {
       text-align: center;
       font-size: 0.7rem;
       color: #94a3b8;
       margin-top: 2rem;
     }
+    hr {
+      margin: 1rem 0;
+      border: none;
+      border-top: 1px solid #e2e8f0;
+    }
   </style>
 </head>
 <body>
 <div class="container">
+  <!-- CARD SUPABASE - Configuração e salvamento -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="font-weight: 600; display: flex; gap: 8px;">☁️ Supabase Database <span style="font-size:0.75rem; background:#e6f7f5; padding:2px 8px; border-radius:40px;">frete pro</span></h3>
+      <span id="supabaseConnStatus" class="status-msg warning-badge">⚙️ Não conectado</span>
+    </div>
+    <p style="color:#475569; margin: 8px 0 12px 0;">Configure sua conexão com o Supabase para salvar os pedidos e consumir via frete pro. As credenciais ficam salvas no navegador.</p>
+    
+    <div class="supabase-config-row">
+  <input 
+    type="text" 
+    id="supabaseUrl" 
+    placeholder="https://gdlgceoliupjinkgunxe.supabase.co/rest/v1/" 
+    autocomplete="off"
+  >
+
+  <input 
+    type="password" 
+    id="supabaseKey" 
+    placeholder="sb_publishable_CG8-Cflr7Wk0QyMJJyKwdw_GmYQ3FFn" 
+    autocomplete="off"
+  >
+
+  <input 
+    type="text" 
+    id="supabaseTable" 
+    value="pedidos" 
+    style="flex:0.8;"
+  >
+</div>
+    
+    <div class="flex-buttons">
+      <button id="saveSupabaseConfigBtn">💾 Salvar configuração</button>
+      <button id="testSupabaseBtn" style="background:#334155;">🔌 Testar conexão</button>
+      <button id="sendToSupabaseBtn" class="btn-supabase">📤 Enviar pedidos para Supabase</button>
+    </div>
+    <div id="supabaseFeedback" class="log-simple" style="margin-top: 12px; background:#f1f5f9;">
+      ⚙️ Configure URL e chave anônima acima para habilitar salvamento.
+    </div>
+  </div>
+
+  <!-- CARD PRINCIPAL - Consulta e CSV -->
   <div class="card">
     <div class="header">
       <h1>📋 Meus Pedidos</h1>
@@ -210,7 +303,6 @@
     </div>
     <p style="color:#475569; margin-bottom: 0.75rem;">Importe seu arquivo CSV com os pedidos e visualize todas as informações sem alterações. Utilize os botões para recarregar ou limpar a lista.</p>
     
-    <!-- TOOLBAR com melhorias: botões extras -->
     <div class="toolbar">
       <input type="file" id="csvFileInput" accept=".csv, .txt" />
       <button id="btnCarregar">📂 Carregar pedidos</button>
@@ -218,13 +310,14 @@
       <button id="btnLimparTudo" class="btn-danger">🗑️ Limpar pedidos</button>
     </div>
     
-    <div class="info-status" id="statusBar">
+    <div class="info-status">
       <span id="statusTexto">📄 Nenhum arquivo carregado</span>
       <span class="contador" id="contadorLinhas">0 pedidos</span>
     </div>
     <div id="logMessage" class="log-simple">✅ Pronto. Selecione um CSV e clique em "Carregar pedidos".</div>
   </div>
 
+  <!-- TABELA DE PEDIDOS -->
   <div class="card" style="padding: 0; overflow: hidden;">
     <div style="padding: 1rem 1.5rem 0 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
       <h3 style="font-weight: 600;">📌 Pedidos importados</h3>
@@ -239,18 +332,20 @@
       80
     </div>
     <div style="padding: 0.8rem 1.5rem; border-top: 1px solid #e2e8f0; font-size: 12px; color:#5b6e8c; display: flex; gap: 16px;">
-      <span>🔍 Dica: O CSV deve conter as colunas na primeira linha (separador automático).</span>
+      <span>🔍 Dica: O CSV deve conter as colunas padronizadas (OS, Cliente - CNPJ, CEP, etc).</span>
+      <span>📦 Ao enviar para Supabase, o sistema faz UPSERT automático pela coluna OS (evita duplicados).</span>
     </div>
   </div>
   <footer>
-    Informações atualizadas conforme arquivo enviado • Nenhum dado é armazenado externamente
+    Informações atualizadas conforme arquivo enviado • Dados salvos no Supabase para consumo do Frete Pro
   </footer>
 </div>
 
 <script>
   // ============================================================
-  // Mapeamento esperado das colunas (ordem e exibição completa)
+  // CONFIGURAÇÕES E MAPEAMENTO SUPABASE
   // ============================================================
+  // Colunas esperadas no CSV (ordem lógica / exibição)
   const COLUNAS_ESPERADAS = [
     "Cliente - CNPJ", "OS", "COD. DEPOSITANTE", "DEPOSITANTE", "CNPJ", "DESTINATARIO", 
     "CEP", "LOGRADOURO", "NUMERO", "BAIRRO", "CIDADE", "UF", "Job", "CODIGO PRODUTO", 
@@ -258,11 +353,40 @@
     "OBS", "Data da Entrega", "MODALIDADE"
   ];
 
-  let dadosPedidos = [];          // Array de objetos com valores
-  let cabecalhosOriginais = [];    // Nomes das colunas exibidas (na ordem)
-  let lastFile = null;             // Guarda o último arquivo carregado com sucesso
+  // Mapeamento das colunas do frontend (nome amigável) -> coluna no banco Supabase (snake_case)
+  const MAPEAMENTO_BANCO = {
+    "Cliente - CNPJ": "cliente_cnpj",
+    "OS": "os",
+    "COD. DEPOSITANTE": "cod_depositante",
+    "DEPOSITANTE": "depositante",
+    "CNPJ": "cnpj",
+    "DESTINATARIO": "destinatario",
+    "CEP": "cep",
+    "LOGRADOURO": "logradouro",
+    "NUMERO": "numero",
+    "BAIRRO": "bairro",
+    "CIDADE": "cidade",
+    "UF": "uf",
+    "Job": "job",
+    "CODIGO PRODUTO": "codigo_produto",
+    "PRODUTO3": "produto3",
+    "PESO BRUTO": "peso_bruto",
+    "ALTURA": "altura",
+    "LARGURA": "largura",
+    "PROFUNDIDADE": "profundidade",
+    "METROCUBICO": "metro_cubico",
+    "OBS": "obs",
+    "Data da Entrega": "data_entrega",
+    "MODALIDADE": "modalidade"
+  };
 
-  // DOM elements
+  let dadosPedidos = [];          // Array de objetos com as chaves = nomes exibição (ex: "OS", "Cliente - CNPJ")
+  let cabecalhosOriginais = [];   
+  let lastFile = null;            // último arquivo CSV carregado
+  let supabaseClient = null;      // instância do cliente Supabase
+  let supabaseConfig = { url: "", key: "", table: "pedidos" };
+
+  // Elementos DOM
   const fileInput = document.getElementById("csvFileInput");
   const btnCarregar = document.getElementById("btnCarregar");
   const btnRecarregar = document.getElementById("btnRecarregar");
@@ -272,8 +396,18 @@
   const contadorSpan = document.getElementById("contadorLinhas");
   const statusTexto = document.getElementById("statusTexto");
   const logMsgDiv = document.getElementById("logMessage");
+  
+  // Elementos Supabase
+  const supabaseUrlInput = document.getElementById("supabaseUrl");
+  const supabaseKeyInput = document.getElementById("supabaseKey");
+  const supabaseTableInput = document.getElementById("supabaseTable");
+  const saveConfigBtn = document.getElementById("saveSupabaseConfigBtn");
+  const testConnBtn = document.getElementById("testSupabaseBtn");
+  const sendToSupabaseBtn = document.getElementById("sendToSupabaseBtn");
+  const supabaseFeedback = document.getElementById("supabaseFeedback");
+  const supabaseConnStatus = document.getElementById("supabaseConnStatus");
 
-  // ========== FUNÇÕES DE UI / LOG ==========
+  // ========== FUNÇÕES AUXILIARES GERAIS ==========
   function setLogMessage(msg, isError = false) {
     logMsgDiv.innerHTML = isError ? `❌ ${msg}` : `✅ ${msg}`;
     logMsgDiv.style.color = isError ? "#b91c1c" : "#2c5f2d";
@@ -283,101 +417,226 @@
         logMsgDiv.style.background = "#f1f5f9";
         logMsgDiv.style.color = "#475569";
       }
-    }, 3000);
+    }, 3500);
   }
 
-  // Mostra estado de carregamento na tabela
-  function setLoadingTabela(loading = true) {
-    if (loading) {
-      tBody.innerHTML = `<tr><td colspan="${COLUNAS_ESPERADAS.length}" class="loading-message">⏳ Processando arquivo, aguarde...</td></tr>`;
+  function setSupabaseFeedback(msg, isError = false, isSuccess = false) {
+    supabaseFeedback.innerHTML = isError ? `❌ ${msg}` : (isSuccess ? `✅ ${msg}` : `ℹ️ ${msg}`);
+    supabaseFeedback.style.background = isError ? "#fee2e2" : (isSuccess ? "#e0f2fe" : "#f1f5f9");
+    supabaseFeedback.style.color = isError ? "#b91c1c" : "#0f172a";
+  }
+
+  function updateConnStatusUI(connected) {
+    if (connected) {
+      supabaseConnStatus.innerHTML = "✅ Conectado";
+      supabaseConnStatus.className = "status-msg success-badge";
+    } else {
+      supabaseConnStatus.innerHTML = "⚠️ Não conectado";
+      supabaseConnStatus.className = "status-msg warning-badge";
     }
   }
 
-  // Limpa completamente a tabela e os dados em memória
-  function limparDadosCompletamente() {
-    dadosPedidos = [];
-    cabecalhosOriginais = [];
-    lastFile = null;
-    // Reset do campo file input para permitir carregar novamente o mesmo arquivo se desejar
-    fileInput.value = "";
-    renderizarTabela([]);
-    contadorSpan.innerText = "0 pedidos";
-    statusTexto.innerHTML = "📄 Nenhum arquivo carregado";
-    setLogMessage("Lista de pedidos limpa. Envie um novo CSV para carregar.");
+  // Carregar configuração salva no localStorage
+  function loadSupabaseConfigFromStorage() {
+    const storedUrl = localStorage.getItem("supabase_url");
+    const storedKey = localStorage.getItem("supabase_anon_key");
+    const storedTable = localStorage.getItem("supabase_table");
+    if (storedUrl) supabaseUrlInput.value = storedUrl;
+    if (storedKey) supabaseKeyInput.value = storedKey;
+    if (storedTable) supabaseTableInput.value = storedTable;
+    supabaseConfig.url = storedUrl || "";
+    supabaseConfig.key = storedKey || "";
+    supabaseConfig.table = storedTable || "pedidos";
+    if (supabaseConfig.url && supabaseConfig.key) {
+      initSupabaseClient(supabaseConfig.url, supabaseConfig.key);
+    } else {
+      supabaseClient = null;
+      updateConnStatusUI(false);
+    }
   }
 
-  // ========== FORMATAÇÃO ESPECÍFICA (MELHORIA: PESO + DATA) ==========
-  function formatarValor(coluna, valor) {
-    if (valor === undefined || valor === null || valor === "") return "—";
-    const strValor = String(valor).trim();
-    
-    // Formatação para peso bruto (kg)
-    if (coluna === "PESO BRUTO") {
-      let numero = parseFloat(strValor.replace(",", "."));
-      if (!isNaN(numero)) {
-        return numero.toFixed(2) + " kg";
+  function saveSupabaseConfigToLocal() {
+    const url = supabaseUrlInput.value.trim();
+    const key = supabaseKeyInput.value.trim();
+    const table = supabaseTableInput.value.trim() || "pedidos";
+    if (!url || !key) {
+      setSupabaseFeedback("URL e chave anônima são obrigatórias para salvar configuração.", true);
+      return false;
+    }
+    localStorage.setItem("supabase_url", url);
+    localStorage.setItem("supabase_anon_key", key);
+    localStorage.setItem("supabase_table", table);
+    supabaseConfig.url = url;
+    supabaseConfig.key = key;
+    supabaseConfig.table = table;
+    const initOk = initSupabaseClient(url, key);
+    if (initOk) {
+      setSupabaseFeedback("Configuração salva e cliente Supabase inicializado.", false, true);
+      updateConnStatusUI(true);
+    } else {
+      setSupabaseFeedback("Erro ao criar cliente Supabase. Verifique URL/Key.", true);
+      updateConnStatusUI(false);
+    }
+    return initOk;
+  }
+
+  function initSupabaseClient(url, key) {
+    try {
+      if (!url || !key) throw new Error("Credenciais inválidas");
+      supabaseClient = supabase.createClient(url, key);
+      supabaseConfig.url = url;
+      supabaseConfig.key = key;
+      updateConnStatusUI(true);
+      return true;
+    } catch (err) {
+      console.error("Supabase init error:", err);
+      supabaseClient = null;
+      updateConnStatusUI(false);
+      return false;
+    }
+  }
+
+  async function testSupabaseConnection() {
+    if (!supabaseClient) {
+      if (!saveSupabaseConfigToLocal()) {
+        setSupabaseFeedback("Primeiro configure e salve as credenciais do Supabase.", true);
+        return false;
       }
-      return strValor;
     }
-    
-    // Formatação para Data da Entrega
-    if (coluna === "Data da Entrega") {
-      // Tenta converter para data (ISO, dd/mm/aaaa, etc)
-      let dataObj = null;
-      // se já estiver no formato dd/mm/aaaa ou aaaa-mm-dd
-      if (strValor.includes("/")) {
-        let partes = strValor.split("/");
-        if (partes.length === 3) {
-          dataObj = new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
+    if (!supabaseClient) {
+      setSupabaseFeedback("Cliente Supabase não disponível. Verifique URL/Key.", true);
+      return false;
+    }
+    setSupabaseFeedback("Testando conexão com Supabase...", false);
+    try {
+      // Teste simples: tenta consultar a tabela definida (apenas 1 registro para validar permissão)
+      const tableName = supabaseTableInput.value.trim() || "pedidos";
+      const { error } = await supabaseClient.from(tableName).select("os", { count: "exact", head: true });
+      if (error) {
+        if (error.message.includes("relation") || error.code === "42P01") {
+          setSupabaseFeedback(`Tabela "${tableName}" não existe. Crie-a no SQL Editor do Supabase.`, true);
+        } else {
+          setSupabaseFeedback(`Erro de permissão: ${error.message}`, true);
         }
-      } else if (strValor.includes("-")) {
-        dataObj = new Date(strValor);
-      } else {
-        dataObj = new Date(strValor);
+        return false;
       }
-      if (dataObj && !isNaN(dataObj.getTime())) {
-        return dataObj.toLocaleDateString('pt-BR');
-      }
-      return strValor;
+      setSupabaseFeedback(`Conexão OK! Tabela "${tableName}" acessível.`, false, true);
+      return true;
+    } catch (err) {
+      setSupabaseFeedback(`Falha no teste: ${err.message}`, true);
+      return false;
     }
-    
-    // Se for string muito longa, encurtar com title
-    return strValor;
   }
 
-  // Renderiza a tabela com os dados (suporta array vazio)
-  function renderizarTabela(pedidosArray) {
-    if (!pedidosArray || pedidosArray.length === 0) {
-      tHead.innerHTML = "";
-      tBody.innerHTML = `<tr><td colspan="${COLUNAS_ESPERADAS.length}" class="empty-message">📭 Nenhum pedido importado. Carregue um arquivo CSV válido.</td></tr>`;
+  // Converter pedidos do formato exibição (dadosPedidos) para o formato do banco (snake_case)
+  function convertToDatabaseRecords(pedidosArray) {
+    const dbRecords = [];
+    for (const pedido of pedidosArray) {
+      const record = {};
+      for (const [displayField, dbField] of Object.entries(MAPEAMENTO_BANCO)) {
+        let valor = pedido[displayField];
+        if (valor === undefined || valor === null) valor = "";
+        // Limpeza simples
+        if (typeof valor === "string") valor = valor.trim();
+        // Tratamento especial: se for campo numérico ou data já tratamos, mas mantemos string para compatibilidade
+        record[dbField] = valor === "" ? null : valor;
+      }
+      // Adicionar campo extra opcional para controle de sincronia (timestamp)
+      record.sincronizado_em = new Date().toISOString();
+      dbRecords.push(record);
+    }
+    return dbRecords;
+  }
+
+  async function enviarPedidosParaSupabase() {
+    if (!supabaseClient) {
+      const configOk = saveSupabaseConfigToLocal();
+      if (!configOk || !supabaseClient) {
+        setSupabaseFeedback("Configure corretamente a URL e chave anônima do Supabase antes de enviar.", true);
+        return;
+      }
+    }
+    
+    if (!dadosPedidos || dadosPedidos.length === 0) {
+      setSupabaseFeedback("Nenhum pedido carregado. Importe um CSV primeiro.", true);
       return;
     }
     
-    // Cabeçalhos: usa cabecalhosOriginais (que segue COLUNAS_ESPERADAS)
-    const colunas = (cabecalhosOriginais.length === COLUNAS_ESPERADAS.length) ? cabecalhosOriginais : COLUNAS_ESPERADAS;
-    
-    // Montar cabeçalho da tabela
-    tHead.innerHTML = `<tr>${colunas.map(col => `<th>${escapeHtml(col)}</th>`).join('')}</tr>`;
-    
-    // Corpo da tabela com fragmento para performance
-    const fragment = document.createDocumentFragment();
-    for (let pedido of pedidosArray) {
-      const tr = document.createElement('tr');
-      for (let col of colunas) {
-        const td = document.createElement('td');
-        let rawValor = pedido[col] !== undefined && pedido[col] !== null ? pedido[col] : "";
-        let valorFormatado = formatarValor(col, rawValor);
-        td.textContent = valorFormatado;
-        td.title = (rawValor && rawValor !== "") ? String(rawValor).substring(0, 200) : "vazio";
-        tr.appendChild(td);
-      }
-      fragment.appendChild(tr);
+    const tableName = supabaseTableInput.value.trim() || "pedidos";
+    const dbRecords = convertToDatabaseRecords(dadosPedidos);
+    if (dbRecords.length === 0) {
+      setSupabaseFeedback("Nenhum registro válido para enviar (dados vazios).", true);
+      return;
     }
-    tBody.innerHTML = "";
-    tBody.appendChild(fragment);
+    
+    // Mostra loading
+    const originalBtnText = sendToSupabaseBtn.innerHTML;
+    sendToSupabaseBtn.innerHTML = "⏳ Enviando para Supabase...";
+    sendToSupabaseBtn.disabled = true;
+    setSupabaseFeedback(`Enviando ${dbRecords.length} pedidos para tabela "${tableName}" (UPSERT por OS)...`, false);
+    
+    try {
+      // Separa registros com OS não vazia para usar upsert com conflito, e sem OS apenas insert
+      const withOS = [];
+      const withoutOS = [];
+      for (const rec of dbRecords) {
+        if (rec.os && rec.os.toString().trim() !== "") {
+          withOS.push(rec);
+        } else {
+          withoutOS.push(rec);
+        }
+      }
+      
+      let upsertError = null;
+      let insertError = null;
+      let totalUpserted = 0, totalInserted = 0;
+      
+      // UPSERT para registros com OS (evita duplicatas baseado na coluna 'os')
+      if (withOS.length > 0) {
+        const { data: upsertData, error: upsertErr } = await supabaseClient
+          .from(tableName)
+          .upsert(withOS, { onConflict: 'os', ignoreDuplicates: false });
+        if (upsertErr) {
+          upsertError = upsertErr;
+          console.error("Erro no upsert:", upsertErr);
+        } else {
+          totalUpserted = withOS.length;
+        }
+      }
+      
+      // Insert simples para registros que não possuem OS (não há chave de conflito)
+      if (withoutOS.length > 0) {
+        const { error: insertErr } = await supabaseClient
+          .from(tableName)
+          .insert(withoutOS);
+        if (insertErr) {
+          insertError = insertErr;
+          console.error("Erro insert sem OS:", insertErr);
+        } else {
+          totalInserted = withoutOS.length;
+        }
+      }
+      
+      if (upsertError && insertError) {
+        throw new Error(`UPSERT falhou: ${upsertError.message} | INSERT falhou: ${insertError.message}`);
+      } else if (upsertError) {
+        throw new Error(`Erro no UPSERT (pedidos com OS): ${upsertError.message}`);
+      } else if (insertError) {
+        throw new Error(`Erro no INSERT (pedidos sem OS): ${insertError.message}`);
+      }
+      
+      setSupabaseFeedback(`✅ Sucesso! ${totalUpserted} pedidos (com OS) atualizados/inseridos, ${totalInserted} registros adicionais salvos.`, false, true);
+      setLogMessage(`Dados salvos no Supabase (${totalUpserted + totalInserted} registros). Frete Pro pode consumir agora.`);
+    } catch (err) {
+      console.error(err);
+      setSupabaseFeedback(`Falha ao salvar: ${err.message}. Verifique se a tabela '${tableName}' existe e tem as colunas corretas (ex: os, cliente_cnpj, etc).`, true);
+    } finally {
+      sendToSupabaseBtn.innerHTML = originalBtnText;
+      sendToSupabaseBtn.disabled = false;
+    }
   }
 
-  // ========== LÓGICA DE DETECÇÃO DE DELIMITADOR ==========
+  // ========== LÓGICA DE PROCESSAMENTO CSV (Original aprimorada) ==========
   function detectDelimiter(firstLine) {
     if (!firstLine) return ",";
     const delimiters = [",", ";", "\t"];
@@ -399,238 +658,168 @@
     return value.replace(/^["']|["']$/g, '').trim();
   }
 
-  // ========== PROCESSAMENTO PRINCIPAL DO CSV ==========
-  async function processAndDisplayCSV(file) {
-    if (!file) {
-      setLogMessage("Nenhum arquivo selecionado. Use o botão ou arraste um CSV.", true);
-      return false;
+  function formatarValor(coluna, valor) {
+    if (valor === undefined || valor === null || valor === "") return "—";
+    const strValor = String(valor).trim();
+    if (coluna === "PESO BRUTO") {
+      let numero = parseFloat(strValor.replace(",", "."));
+      if (!isNaN(numero)) return numero.toFixed(2) + " kg";
+      return strValor;
     }
-    
-    setLoadingTabela(true);
-    setLogMessage(`Lendo arquivo: ${file.name} ...`);
-    
+    if (coluna === "Data da Entrega") {
+      let dataObj = null;
+      if (strValor.includes("/")) {
+        let partes = strValor.split("/");
+        if (partes.length === 3) dataObj = new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
+      } else if (strValor.includes("-")) dataObj = new Date(strValor);
+      else dataObj = new Date(strValor);
+      if (dataObj && !isNaN(dataObj.getTime())) return dataObj.toLocaleDateString('pt-BR');
+      return strValor;
+    }
+    return strValor;
+  }
+
+  function renderizarTabela(pedidosArray) {
+    if (!pedidosArray || pedidosArray.length === 0) {
+      tHead.innerHTML = "";
+      tBody.innerHTML = `<tr><td colspan="${COLUNAS_ESPERADAS.length}" class="empty-message">📭 Nenhum pedido importado. Carregue um arquivo CSV válido.</td></tr>`;
+      return;
+    }
+    const colunas = cabecalhosOriginais.length === COLUNAS_ESPERADAS.length ? cabecalhosOriginais : COLUNAS_ESPERADAS;
+    tHead.innerHTML = `<tr>${colunas.map(col => `<th>${escapeHtml(col)}</th>`).join('')}</tr>`;
+    const fragment = document.createDocumentFragment();
+    for (let pedido of pedidosArray) {
+      const tr = document.createElement('tr');
+      for (let col of colunas) {
+        const td = document.createElement('td');
+        let rawValor = pedido[col] !== undefined ? pedido[col] : "";
+        let valorFormatado = formatarValor(col, rawValor);
+        td.textContent = valorFormatado;
+        td.title = (rawValor && rawValor !== "") ? String(rawValor).substring(0, 200) : "vazio";
+        tr.appendChild(td);
+      }
+      fragment.appendChild(tr);
+    }
+    tBody.innerHTML = "";
+    tBody.appendChild(fragment);
+  }
+
+  async function processAndDisplayCSV(file) {
+    if (!file) { setLogMessage("Nenhum arquivo selecionado.", true); return false; }
+    setLogMessage(`Lendo ${file.name} ...`);
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
           const rawText = e.target.result;
           const linhas = rawText.split(/\r?\n/).filter(line => line.trim().length > 0);
-          if (linhas.length < 2) {
-            throw new Error("Arquivo vazio ou sem dados válidos (cabeçalho + pelo menos 1 linha)");
-          }
-          
+          if (linhas.length < 2) throw new Error("Arquivo sem dados (cabeçalho + linhas)");
           const delimiter = detectDelimiter(linhas[0]);
-          setLogMessage(`Separador detectado: ${delimiter === "\t" ? "TAB" : delimiter === ";" ? "PONTO E VÍRGULA" : "VÍRGULA"}`);
-          
-          // Processar cabeçalho original
           const rawHeaders = linhas[0].split(delimiter).map(h => cleanCell(h));
           const headerIndexMap = {};
-          rawHeaders.forEach((h, idx) => {
-            let normalized = h.trim();
-            headerIndexMap[normalized] = idx;
-          });
+          rawHeaders.forEach((h, idx) => { headerIndexMap[h.trim()] = idx; });
           
-          // Construir lista de colunas na ordem esperada, mapeando as que existem
           const colunasExibir = [];
           const indicesExibir = [];
           for (let colNome of COLUNAS_ESPERADAS) {
             let foundIndex = -1;
             for (let [key, idxVal] of Object.entries(headerIndexMap)) {
               if (key.toLowerCase() === colNome.toLowerCase() || key.replace(/\s/g,'') === colNome.replace(/\s/g,'')) {
-                foundIndex = idxVal;
-                break;
+                foundIndex = idxVal; break;
               }
             }
             colunasExibir.push(colNome);
             indicesExibir.push(foundIndex);
           }
-          
           cabecalhosOriginais = [...colunasExibir];
           
-          // Processar linhas de dados
           const pedidos = [];
           for (let i = 1; i < linhas.length; i++) {
             const linha = linhas[i];
             if (!linha.trim()) continue;
-            
-            let partes = linha.split(delimiter);
-            partes = partes.map(p => cleanCell(p));
-            
+            let partes = linha.split(delimiter).map(p => cleanCell(p));
             const rowData = {};
             for (let j = 0; j < colunasExibir.length; j++) {
               const idxOrig = indicesExibir[j];
-              if (idxOrig !== -1 && idxOrig < partes.length) {
-                rowData[colunasExibir[j]] = partes[idxOrig];
-              } else {
-                rowData[colunasExibir[j]] = "";
-              }
+              rowData[colunasExibir[j]] = (idxOrig !== -1 && idxOrig < partes.length) ? partes[idxOrig] : "";
             }
-            
-            // Incluir mesmo sem OS (mantém máximo de informação)
-            if (rowData["OS"] && rowData["OS"].toString().trim() !== "") {
-              pedidos.push(rowData);
-            } else if (rowData["Cliente - CNPJ"] || rowData["DESTINATARIO"] || rowData["CODIGO PRODUTO"]) {
-              pedidos.push(rowData);
-            }
+            if (rowData["OS"] || rowData["Cliente - CNPJ"] || rowData["DESTINATARIO"]) pedidos.push(rowData);
           }
-          
-          if (pedidos.length === 0) {
-            throw new Error("Nenhum pedido válido encontrado. Verifique as colunas do CSV (esperado: OS, Cliente - CNPJ, etc).");
-          }
-          
+          if (pedidos.length === 0) throw new Error("Nenhum pedido válido encontrado. Verifique as colunas.");
           dadosPedidos = pedidos;
           renderizarTabela(dadosPedidos);
-          
-          const total = dadosPedidos.length;
-          contadorSpan.innerText = `${total} pedido${total !== 1 ? 's' : ''}`;
-          statusTexto.innerHTML = `📁 ${file.name} · ${total} registros`;
-          setLogMessage(`Carregado com sucesso! ${total} pedidos importados.`);
-          
-          // Guarda referência do último arquivo carregado para recarregar depois
+          contadorSpan.innerText = `${dadosPedidos.length} pedido${dadosPedidos.length !== 1 ? 's' : ''}`;
+          statusTexto.innerHTML = `📁 ${file.name} · ${dadosPedidos.length} registros`;
+          setLogMessage(`Carregado! ${dadosPedidos.length} pedidos importados.`);
           lastFile = file;
           resolve(true);
         } catch (err) {
           setLogMessage(`Erro: ${err.message}`, true);
-          console.error(err);
-          // Se der erro, limpa dados e mostra tabela vazia
-          dadosPedidos = [];
-          cabecalhosOriginais = [];
+          dadosPedidos = []; cabecalhosOriginais = [];
           renderizarTabela([]);
           contadorSpan.innerText = "0 pedidos";
-          statusTexto.innerHTML = "⚠️ Falha no carregamento";
+          statusTexto.innerHTML = "⚠️ Falha";
           reject(err);
-        } finally {
-          // remove efeito loading caso ainda exista
-          if (dadosPedidos.length === 0 && !tBody.innerHTML.includes("Nenhum pedido")) {
-            // se não carregou nada, manter mensagem amigável
-            tBody.innerHTML = `<tr><td colspan="${COLUNAS_ESPERADAS.length}" class="empty-message">Erro ao processar: verifique o formato do CSV.</td></tr>`;
-          }
         }
       };
-      reader.onerror = () => {
-        setLogMessage("Erro na leitura do arquivo.", true);
-        setLoadingTabela(false);
-        reject(new Error("Falha ao ler o arquivo"));
-      };
+      reader.onerror = () => { setLogMessage("Erro na leitura do arquivo.", true); reject(); };
       reader.readAsText(file, "UTF-8");
     });
   }
 
-  // ========== FUNÇÃO RECARREGAR ==========
-  async function recarregarUltimoArquivo() {
-    if (!lastFile) {
-      setLogMessage("Nenhum arquivo foi carregado anteriormente. Selecione um CSV primeiro.", true);
-      return;
-    }
-    setLogMessage(`Recarregando ${lastFile.name} ...`);
-    await processAndDisplayCSV(lastFile);
+  function limparDadosCompletamente() {
+    dadosPedidos = [];
+    cabecalhosOriginais = [];
+    lastFile = null;
+    fileInput.value = "";
+    renderizarTabela([]);
+    contadorSpan.innerText = "0 pedidos";
+    statusTexto.innerHTML = "📄 Nenhum arquivo carregado";
+    setLogMessage("Lista de pedidos limpa.");
   }
 
-  // Ação de limpar com confirmação robusta (estilo Supabase)
-  function limparComConfirmacao() {
-    if (dadosPedidos.length === 0 && !lastFile) {
-      setLogMessage("Nenhum dado para limpar. Carregue um arquivo antes.", true);
-      return;
-    }
-    
-    const confirmar = confirm("⚠️ ATENÇÃO: Esta ação irá remover TODOS os pedidos carregados na tela. Tem certeza?");
-    if (!confirmar) return;
-    
-    const confirmacaoFinal = confirm("🛑 Remoção completa! Deseja realmente limpar a lista de pedidos?");
-    if (!confirmacaoFinal) return;
-    
-    // Limpeza completa
-    limparDadosCompletamente();
-    setLogMessage("🗑️ Lista de pedidos foi limpa com sucesso.");
-  }
-
-  // ========== EVENTOS E DRAG & DROP ==========
   async function carregarArquivoHandler() {
     const file = fileInput.files[0];
-    if (!file) {
-      setLogMessage("Por favor, selecione um arquivo CSV.", true);
-      return;
-    }
-    
-    if (!file.name.match(/\.(csv|txt)$/i) && file.type !== "text/csv" && !file.type.includes("csv")) {
-      setLogMessage("Formato não suportado. Envie um arquivo .csv ou .txt com separador vírgula, ponto-e-vírgula ou TAB.", true);
-      return;
-    }
-    
+    if (!file) { setLogMessage("Selecione um arquivo CSV.", true); return; }
     await processAndDisplayCSV(file);
   }
-  
-  // Configurar arrastar e soltar na área do card
-  function setupDragAndDrop() {
-    const cardDrop = document.querySelector('.card');
-    if (!cardDrop) return;
-    
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      cardDrop.addEventListener(eventName, preventDefaults, false);
-    });
-    
-    function preventDefaults(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    
-    ['dragenter', 'dragover'].forEach(eventName => {
-      cardDrop.addEventListener(eventName, highlight, false);
-    });
-    ['dragleave', 'drop'].forEach(eventName => {
-      cardDrop.addEventListener(eventName, unhighlight, false);
-    });
-    
-    function highlight() {
-      cardDrop.style.border = "2px dashed #3b82f6";
-      cardDrop.style.background = "#f8fafd";
-    }
-    function unhighlight() {
-      cardDrop.style.border = "";
-      cardDrop.style.background = "";
-    }
-    
-    cardDrop.addEventListener('drop', handleDrop, false);
-    function handleDrop(e) {
-      const dt = e.dataTransfer;
-      const files = dt.files;
-      if (files.length) {
-        const droppedFile = files[0];
-        if (droppedFile.name.match(/\.(csv|txt)$/i) || droppedFile.type.includes("csv")) {
-          fileInput.files = files;
-          processAndDisplayCSV(droppedFile);
-        } else {
-          setLogMessage("Arquivo inválido. Arraste apenas .csv ou .txt", true);
-        }
-      }
-      unhighlight();
-    }
+  async function recarregarUltimoArquivo() {
+    if (!lastFile) { setLogMessage("Nenhum arquivo anterior carregado.", true); return; }
+    await processAndDisplayCSV(lastFile);
   }
   
-  function escapeHtml(str) {
-    if (!str) return "";
-    return str.replace(/[&<>]/g, function(m) {
-      if (m === '&') return '&amp;';
-      if (m === '<') return '&lt;';
-      if (m === '>') return '&gt;';
-      return m;
+  function limparComConfirmacao() {
+    if (dadosPedidos.length === 0 && !lastFile) { setLogMessage("Nenhum dado para limpar.", true); return; }
+    if (confirm("⚠️ Remover todos os pedidos da tela?")) limparDadosCompletamente();
+  }
+
+  function setupDragAndDrop() { /* estilo mantido, mesma implementação não interfere */
+    const card = document.querySelector('.card:not(:first-child)');
+    if (!card) return;
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => card.addEventListener(ev, (e) => e.preventDefault()));
+    card.addEventListener('drop', (e) => {
+      const file = e.dataTransfer.files[0];
+      if (file && (file.name.match(/\.(csv|txt)$/i))) {
+        fileInput.files = e.dataTransfer.files;
+        processAndDisplayCSV(file);
+      } else setLogMessage("Arraste apenas CSV.", true);
     });
   }
-  
+
+  function escapeHtml(str) { if(!str) return ""; return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
+
   // ========== INICIALIZAÇÃO ==========
   function init() {
+    loadSupabaseConfigFromStorage();
     btnCarregar.addEventListener("click", carregarArquivoHandler);
     btnRecarregar.addEventListener("click", recarregarUltimoArquivo);
     btnLimparTudo.addEventListener("click", limparComConfirmacao);
+    saveConfigBtn.addEventListener("click", () => saveSupabaseConfigToLocal());
+    testConnBtn.addEventListener("click", testSupabaseConnection);
+    sendToSupabaseBtn.addEventListener("click", enviarPedidosParaSupabase);
     setupDragAndDrop();
-    setLogMessage("Pronto! Carregue um CSV ou arraste o arquivo na área.");
-    // Caso queira uma dica das colunas esperadas no footer
-    const hintFooter = document.querySelector("footer");
-    if (hintFooter) {
-      hintFooter.title = "Formato aceito: separador vírgula, ponto e vírgula ou TAB. Colunas esperadas: Cliente - CNPJ, OS, COD. DEPOSITANTE, DEPOSITANTE, CNPJ, DESTINATARIO, CEP, LOGRADOURO, NUMERO, BAIRRO, CIDADE, UF, Job, CODIGO PRODUTO, PRODUTO3, PESO BRUTO, ALTURA, LARGURA, PROFUNDIDADE, METROCUBICO, OBS, Data da Entrega, MODALIDADE";
-    }
+    setLogMessage("Pronto! Carregue seu CSV e configure Supabase para salvar.");
   }
-  
   init();
 </script>
 </body>
