@@ -118,14 +118,38 @@
 
 <script>
   // ======================== CONFIGURAÇÕES ========================
-  const COLUNAS_ESPERADAS = [
-    "Cliente - CNPJ", "OS", "COD. DEPOSITANTE", "DEPOSITANTE", "CNPJ", "DESTINATARIO", 
-    "CEP", "LOGRADOURO", "NUMERO", "BAIRRO", "CIDADE", "UF", "Job", "CODIGO PRODUTO", 
-    "Descrição", "PESO BRUTO", "ALTURA", "LARGURA", "PROFUNDIDADE", "METROCUBICO", 
-    "OBS", "Data Previsão", "Data da Entrega", "MODALIDADE", "Status"
-  ];
 
-  const MAPEAMENTO_BANCO = {
+// 🔍 Colunas esperadas no CSV (padronizadas)
+const COLUNAS_ESPERADAS = [
+  "Cliente - CNPJ",
+  "OS",
+  "COD. DEPOSITANTE",
+  "DEPOSITANTE",
+  "CNPJ",
+  "DESTINATARIO",
+  "CEP",
+  "LOGRADOURO",
+  "NUMERO",
+  "BAIRRO",
+  "CIDADE",
+  "UF",
+  "Job",
+  "CODIGO PRODUTO",
+  "Descrição",
+  "PESO BRUTO",
+  "ALTURA",
+  "LARGURA",
+  "PROFUNDIDADE",
+  "METROCUBICO",
+  "OBS",
+  "Data Previsão",
+  "Data da Entrega",
+  "MODALIDADE",
+  "Status"
+];
+
+// 🔄 Mapeamento CSV → Banco (Supabase)
+const MAPEAMENTO_BANCO = {
   "Cliente - CNPJ": "cliente_cnpj",
   "OS": "os",
   "COD. DEPOSITANTE": "cod_depositante",
@@ -141,17 +165,17 @@
   "Job": "job",
   "CODIGO PRODUTO": "codigo_produto",
 
-  // 🔥 PRODUTO (CORRETO)
+  // 📦 Produto
   "Descrição": "descricao",
 
-  // 🔥 PESO E DIMENSÕES
+  // ⚖️ Peso e dimensões
   "PESO BRUTO": "peso_bruto",
   "ALTURA": "altura",
   "LARGURA": "largura",
   "PROFUNDIDADE": "profundidade",
   "METROCUBICO": "metro_cubico",
 
-  // 🔥 OUTROS
+  // 📌 Informações adicionais
   "OBS": "obs",
   "Data Previsão": "previsao_despacho",
   "Data da Entrega": "data_entrega",
