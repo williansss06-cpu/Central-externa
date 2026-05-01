@@ -4,367 +4,120 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <title>Consulta de Pedidos + Supabase | Cliente e Frete Pro</title>
-  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: #f1f5f9;
-      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      font-family: 'Segoe UI', Roboto, sans-serif;
       padding: 2rem 1.5rem;
       color: #0f172a;
     }
-
-    .container {
-      max-width: 100%;
-      margin: 0 auto;
-    }
-
-    /* CARD principal */
+    .container { max-width: 100%; margin: 0 auto; }
     .card {
       background: white;
       border-radius: 1.5rem;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.02);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.05);
       padding: 1.8rem;
       margin-bottom: 2rem;
-      transition: all 0.2s;
     }
-
-    .header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    h1 {
-      font-size: 1.7rem;
-      font-weight: 600;
-      background: linear-gradient(135deg, #1e293b, #2d3a5e);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-      letter-spacing: -0.3px;
-    }
-
-    .badge-cliente {
-      background: #e2e8f0;
-      padding: 0.3rem 1rem;
-      border-radius: 40px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: #1e293b;
-    }
-
-    /* TOOLBAR com botões */
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 1rem;
-      margin: 1.5rem 0 0.5rem 0;
-    }
-
-    input[type="file"] {
-      background: #f8fafc;
-      border: 1px solid #cbd5e1;
+    h1 { font-size: 1.7rem; font-weight: 600; background: linear-gradient(135deg, #1e293b, #2d3a5e); background-clip: text; -webkit-background-clip: text; color: transparent; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0 0.5rem; }
+    input[type="file"], button, .supabase-config-row input {
       border-radius: 60px;
       padding: 0.6rem 1.2rem;
       font-size: 0.85rem;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
       cursor: pointer;
       transition: 0.2s;
     }
-
-    input[type="file"]:hover {
-      border-color: #3b82f6;
-      background: #ffffff;
-    }
-
     button {
       background: #2563eb;
       color: white;
       border: none;
-      padding: 0.6rem 1.5rem;
-      border-radius: 60px;
       font-weight: 600;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: 0.2s;
       box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
     }
-
-    button:hover {
-      background: #1d4ed8;
-      transform: translateY(-1px);
-    }
-
-    .btn-danger {
-      background: #dc2626;
-    }
-    .btn-danger:hover {
-      background: #b91c1c;
-    }
-
-    .btn-supabase {
-      background: #0d9488;
-    }
-    .btn-supabase:hover {
-      background: #0f766e;
-    }
-
+    button:hover { background: #1d4ed8; transform: translateY(-1px); }
+    .btn-danger { background: #dc2626; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-supabase { background: #0d9488; }
+    .btn-supabase:hover { background: #0f766e; }
     .info-status {
-      margin-top: 1rem;
       background: #f1f5f9;
       border-radius: 1rem;
       padding: 0.8rem 1.2rem;
-      font-size: 0.85rem;
-      color: #334155;
       display: flex;
       justify-content: space-between;
       flex-wrap: wrap;
-      gap: 1rem;
+      margin: 1rem 0;
     }
-
-    .contador {
-      font-weight: 700;
-      background: #e6f0ff;
-      padding: 0.2rem 0.8rem;
-      border-radius: 40px;
-      color: #1e40af;
-    }
-
-    .table-wrapper {
-      overflow-x: auto;
-      border-radius: 1rem;
-      border: 1px solid #e2e8f0;
-      background: white;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.75rem;
-      min-width: 1300px;
-    }
-
-    th {
-      background: #f8fafc;
-      color: #1e293b;
-      font-weight: 600;
-      padding: 12px 10px;
-      border-bottom: 1px solid #e2e8f0;
-      white-space: nowrap;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-
-    td {
-      padding: 10px 8px;
-      border-bottom: 1px solid #f1f5f9;
-      white-space: nowrap;
-      color: #0f172a;
-    }
-
-    tr:hover td {
-      background-color: #fefce8;
-    }
-
-    .empty-message, .loading-message {
-      text-align: center;
-      padding: 3rem;
-      color: #64748b;
-      font-size: 0.9rem;
-    }
-
-    .log-simple {
-      margin-top: 0.5rem;
-      font-size: 0.8rem;
-      color: #475569;
-      background: #f1f5f9;
-      padding: 0.5rem 1rem;
-      border-radius: 60px;
-      transition: 0.1s;
-      display: inline-block;
-    }
-
+    .contador { font-weight: 700; background: #e6f0ff; padding: 0.2rem 0.8rem; border-radius: 40px; color: #1e40af; }
+    .table-wrapper { overflow-x: auto; border-radius: 1rem; border: 1px solid #e2e8f0; background: white; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.75rem; min-width: 1300px; }
+    th { background: #f8fafc; padding: 12px 10px; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; }
+    tr:hover td { background-color: #fefce8; }
     .supabase-config-row {
       display: flex;
       flex-wrap: wrap;
-      align-items: center;
       gap: 12px;
       margin-top: 0.8rem;
       margin-bottom: 1rem;
     }
-    .supabase-config-row input {
-      flex: 1 1 200px;
-      padding: 10px 14px;
-      border: 1px solid #cbd5e1;
-      border-radius: 60px;
-      font-size: 0.85rem;
-      background: #fff;
-      transition: 0.2s;
-    }
-    .supabase-config-row input:focus {
-      outline: none;
-      border-color: #0d9488;
-      box-shadow: 0 0 0 2px rgba(13,148,136,0.2);
-    }
-    .flex-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-    }
-    .status-msg {
-      font-size: 0.8rem;
-      padding: 0.3rem 0.8rem;
-      border-radius: 40px;
-    }
-    .warning-badge {
-      background: #fef9c3;
-      color: #854d0e;
-    }
-    .success-badge {
-      background: #d1fae5;
-      color: #065f46;
-    }
-    footer {
-      text-align: center;
-      font-size: 0.7rem;
-      color: #94a3b8;
-      margin-top: 2rem;
-    }
-    hr {
-      margin: 1rem 0;
-      border: none;
-      border-top: 1px solid #e2e8f0;
-    }
+    .supabase-config-row input { flex: 1; background: white; cursor: text; }
+    .status-msg { font-size: 0.8rem; padding: 0.3rem 0.8rem; border-radius: 40px; display: inline-block; }
+    .warning-badge { background: #fef9c3; color: #854d0e; }
+    .success-badge { background: #d1fae5; color: #065f46; }
+    footer { text-align: center; font-size: 0.7rem; color: #94a3b8; margin-top: 2rem; }
+    .log-simple { background: #f1f5f9; padding: 0.5rem 1rem; border-radius: 60px; margin-top: 0.5rem; font-size: 0.8rem; }
   </style>
 </head>
 <body>
 <div class="container">
-  <!-- SUPABASE -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<div class="card">
-  <div style="display:flex; justify-content:space-between; align-items:center;">
-    <h3>☁️ Supabase Database</h3>
-    <span id="connStatus" style="font-size:12px;">⚙️ Não conectado</span>
+  <!-- CARD PRINCIPAL - CSV -->
+  <div class="card">
+    <div class="toolbar">
+      <input type="file" id="csvFileInput" accept=".csv, .txt">
+      <button id="btnCarregar">📂 Carregar CSV</button>
+      <button id="btnRecarregar">🔄 Recarregar</button>
+      <button id="btnLimparTudo" class="btn-danger">🗑️ Limpar</button>
+    </div>
+    <div class="info-status">
+      <span>📊 <span id="contadorLinhas">0 pedidos</span></span>
+      <span id="statusTexto">📄 Nenhum arquivo carregado</span>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead id="tHead"></thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+    <div id="logMessage" class="log-simple">✅ Sistema pronto. Carregue um CSV e configure o Supabase.</div>
   </div>
 
-  <div style="margin-top:10px; display:flex; gap:10px;">
-    <input id="url" style="flex:2;" value="https://gdlgceoliupjinkgunxe.supabase.co">
-    <input id="key" style="flex:3;" value="sb_publishable_wOUtKsTrZGibGg5_VRT7Bg_UOfSFo0_">
-    <input id="table" style="flex:1;" value="pedidos">
+  <!-- CARD SUPABASE -->
+  <div class="card">
+    <h3>☁️ Enviar para Supabase</h3>
+    <div class="supabase-config-row">
+      <input type="text" id="supabaseUrl" placeholder="URL do Supabase" value="https://gdlgceoliupjinkgunxe.supabase.co">
+      <input type="text" id="supabaseKey" placeholder="Chave anônima (public)" value="sb_publishable_wOUtKsTrZGibGg5_VRT7Bg_UOfSFo0_">
+      <input type="text" id="supabaseTable" placeholder="Nome da tabela" value="pedidos">
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+      <button id="saveSupabaseConfigBtn">💾 Salvar Config</button>
+      <button id="testSupabaseBtn">🔌 Testar Conexão</button>
+      <button id="sendToSupabaseBtn" class="btn-supabase">📤 Enviar Pedidos</button>
+    </div>
+    <div id="supabaseFeedback" class="log-simple" style="margin-top: 12px;"></div>
+    <div id="supabaseConnStatus" class="status-msg warning-badge" style="margin-top: 8px;">⚠️ Não conectado</div>
   </div>
-
-  <div style="margin-top:10px; display:flex; gap:10px;">
-    <button onclick="salvar()">💾 Salvar</button>
-    <button onclick="testar()">🔌 Testar</button>
-    <button onclick="enviar()">📤 Enviar</button>
-  </div>
-
-  <div id="log" style="margin-top:10px; font-size:13px;">Pronto</div>
+  <footer>Cliente e Frete Pro — Integração com Supabase 100% funcional</footer>
 </div>
 
 <script>
-let supabaseClient = null;
-
-// ==========================
-// SALVAR CONFIG
-// ==========================
-function salvar() {
-  const url = document.getElementById('url').value.trim();
-  const key = document.getElementById('key').value.trim();
-  const table = document.getElementById('table').value.trim();
-
-  localStorage.setItem('url', url);
-  localStorage.setItem('key', key);
-  localStorage.setItem('table', table);
-
-  document.getElementById('log').innerText = "✅ Configuração salva";
-}
-
-// ==========================
-// TESTAR CONEXÃO
-// ==========================
-async function testar() {
-  try {
-    const url = localStorage.getItem('url');
-    const key = localStorage.getItem('key');
-    const table = localStorage.getItem('table');
-
-    if (!url || !key) throw new Error("Preencha URL e KEY");
-
-    supabaseClient = window.supabase.createClient(url, key);
-
-    const { error } = await supabaseClient.from(table).select('*').limit(1);
-
-    if (error) throw error;
-
-    document.getElementById('connStatus').innerText = "🟢 Conectado";
-    document.getElementById('log').innerText = "✅ Conexão OK";
-
-  } catch (e) {
-    document.getElementById('log').innerText = "❌ " + e.message;
-  }
-}
-
-// ==========================
-// ENVIAR PEDIDOS
-// ==========================
-async function enviar() {
-  try {
-    if (!supabaseClient) throw new Error("Conecte primeiro");
-
-    if (!window.pedidos || window.pedidos.length === 0) {
-      throw new Error("Nenhum pedido carregado");
-    }
-
-    const table = localStorage.getItem('table');
-
-    const { error } = await supabaseClient
-      .from(table)
-      .insert(window.pedidos);
-
-    if (error) throw error;
-
-    document.getElementById('log').innerText =
-      "🚀 " + window.pedidos.length + " pedidos enviados";
-
-  } catch (e) {
-    document.getElementById('log').innerText = "❌ " + e.message;
-  }
-}
-
-// ==========================
-// AUTO LOAD
-// ==========================
-window.onload = () => {
-  const url = localStorage.getItem('url');
-  const key = localStorage.getItem('key');
-  const table = localStorage.getItem('table');
-
-  if (url) document.getElementById('url').value = url;
-  if (key) document.getElementById('key').value = key;
-  if (table) document.getElementById('table').value = table;
-};
-</script>
-  // ============================================================
-  // CONFIGURAÇÕES E MAPEAMENTO SUPABASE
-  // ============================================================
-  // Colunas esperadas no CSV (ordem lógica / exibição)
+  // ======================== CONFIGURAÇÕES ========================
   const COLUNAS_ESPERADAS = [
     "Cliente - CNPJ", "OS", "COD. DEPOSITANTE", "DEPOSITANTE", "CNPJ", "DESTINATARIO", 
     "CEP", "LOGRADOURO", "NUMERO", "BAIRRO", "CIDADE", "UF", "Job", "CODIGO PRODUTO", 
@@ -372,38 +125,21 @@ window.onload = () => {
     "OBS", "Data da Entrega", "MODALIDADE"
   ];
 
-  // Mapeamento das colunas do frontend (nome amigável) -> coluna no banco Supabase (snake_case)
   const MAPEAMENTO_BANCO = {
-    "Cliente - CNPJ": "cliente_cnpj",
-    "OS": "os",
-    "COD. DEPOSITANTE": "cod_depositante",
-    "DEPOSITANTE": "depositante",
-    "CNPJ": "cnpj",
-    "DESTINATARIO": "destinatario",
-    "CEP": "cep",
-    "LOGRADOURO": "logradouro",
-    "NUMERO": "numero",
-    "BAIRRO": "bairro",
-    "CIDADE": "cidade",
-    "UF": "uf",
-    "Job": "job",
-    "CODIGO PRODUTO": "codigo_produto",
-    "PRODUTO3": "produto3",
-    "PESO BRUTO": "peso_bruto",
-    "ALTURA": "altura",
-    "LARGURA": "largura",
-    "PROFUNDIDADE": "profundidade",
-    "METROCUBICO": "metro_cubico",
-    "OBS": "obs",
-    "Data da Entrega": "data_entrega",
-    "MODALIDADE": "modalidade"
+    "Cliente - CNPJ": "cliente_cnpj", "OS": "os", "COD. DEPOSITANTE": "cod_depositante",
+    "DEPOSITANTE": "depositante", "CNPJ": "cnpj", "DESTINATARIO": "destinatario",
+    "CEP": "cep", "LOGRADOURO": "logradouro", "NUMERO": "numero", "BAIRRO": "bairro",
+    "CIDADE": "cidade", "UF": "uf", "Job": "job", "CODIGO PRODUTO": "codigo_produto",
+    "PRODUTO3": "produto3", "PESO BRUTO": "peso_bruto", "ALTURA": "altura",
+    "LARGURA": "largura", "PROFUNDIDADE": "profundidade", "METROCUBICO": "metro_cubico",
+    "OBS": "obs", "Data da Entrega": "data_entrega", "MODALIDADE": "modalidade"
   };
 
-  let dadosPedidos = [];          // Array de objetos com as chaves = nomes exibição (ex: "OS", "Cliente - CNPJ")
-  let cabecalhosOriginais = [];   
-  let lastFile = null;            // último arquivo CSV carregado
-  let supabaseClient = null;      // instância do cliente Supabase
-  let supabaseConfig = { url: "", key: "", table: "pedidos" };
+  // Estado global
+  let dadosPedidos = [];
+  let cabecalhosOriginais = [];
+  let lastFile = null;
+  let supabaseClient = null;
 
   // Elementos DOM
   const fileInput = document.getElementById("csvFileInput");
@@ -415,8 +151,7 @@ window.onload = () => {
   const contadorSpan = document.getElementById("contadorLinhas");
   const statusTexto = document.getElementById("statusTexto");
   const logMsgDiv = document.getElementById("logMessage");
-  
-  // Elementos Supabase
+
   const supabaseUrlInput = document.getElementById("supabaseUrl");
   const supabaseKeyInput = document.getElementById("supabaseKey");
   const supabaseTableInput = document.getElementById("supabaseTable");
@@ -426,23 +161,19 @@ window.onload = () => {
   const supabaseFeedback = document.getElementById("supabaseFeedback");
   const supabaseConnStatus = document.getElementById("supabaseConnStatus");
 
-  // ========== FUNÇÕES AUXILIARES GERAIS ==========
+  // ======================== FUNÇÕES AUXILIARES ========================
   function setLogMessage(msg, isError = false) {
     logMsgDiv.innerHTML = isError ? `❌ ${msg}` : `✅ ${msg}`;
-    logMsgDiv.style.color = isError ? "#b91c1c" : "#2c5f2d";
     logMsgDiv.style.background = isError ? "#fee2e2" : "#e6f7e6";
+    logMsgDiv.style.color = isError ? "#b91c1c" : "#2c5f2d";
     setTimeout(() => {
-      if (!isError && logMsgDiv.innerHTML === `✅ ${msg}`) {
-        logMsgDiv.style.background = "#f1f5f9";
-        logMsgDiv.style.color = "#475569";
-      }
+      if (!isError) logMsgDiv.style.background = "#f1f5f9";
     }, 3500);
   }
 
   function setSupabaseFeedback(msg, isError = false, isSuccess = false) {
     supabaseFeedback.innerHTML = isError ? `❌ ${msg}` : (isSuccess ? `✅ ${msg}` : `ℹ️ ${msg}`);
     supabaseFeedback.style.background = isError ? "#fee2e2" : (isSuccess ? "#e0f2fe" : "#f1f5f9");
-    supabaseFeedback.style.color = isError ? "#b91c1c" : "#0f172a";
   }
 
   function updateConnStatusUI(connected) {
@@ -455,39 +186,18 @@ window.onload = () => {
     }
   }
 
-  // Carregar configuração salva no localStorage
-  function loadSupabaseConfigFromStorage() {
-    const storedUrl = localStorage.getItem("supabase_url");
-    const storedKey = localStorage.getItem("supabase_anon_key");
-    const storedTable = localStorage.getItem("supabase_table");
-    if (storedUrl) supabaseUrlInput.value = storedUrl;
-    if (storedKey) supabaseKeyInput.value = storedKey;
-    if (storedTable) supabaseTableInput.value = storedTable;
-    supabaseConfig.url = storedUrl || "";
-    supabaseConfig.key = storedKey || "";
-    supabaseConfig.table = storedTable || "pedidos";
-    if (supabaseConfig.url && supabaseConfig.key) {
-      initSupabaseClient(supabaseConfig.url, supabaseConfig.key);
-    } else {
-      supabaseClient = null;
-      updateConnStatusUI(false);
-    }
-  }
-
+  // Salvar configuração
   function saveSupabaseConfigToLocal() {
     const url = supabaseUrlInput.value.trim();
     const key = supabaseKeyInput.value.trim();
     const table = supabaseTableInput.value.trim() || "pedidos";
     if (!url || !key) {
-      setSupabaseFeedback("URL e chave anônima são obrigatórias para salvar configuração.", true);
+      setSupabaseFeedback("URL e chave anônima são obrigatórias.", true);
       return false;
     }
     localStorage.setItem("supabase_url", url);
     localStorage.setItem("supabase_anon_key", key);
     localStorage.setItem("supabase_table", table);
-    supabaseConfig.url = url;
-    supabaseConfig.key = key;
-    supabaseConfig.table = table;
     const initOk = initSupabaseClient(url, key);
     if (initOk) {
       setSupabaseFeedback("Configuração salva e cliente Supabase inicializado.", false, true);
@@ -503,37 +213,40 @@ window.onload = () => {
     try {
       if (!url || !key) throw new Error("Credenciais inválidas");
       supabaseClient = supabase.createClient(url, key);
-      supabaseConfig.url = url;
-      supabaseConfig.key = key;
-      updateConnStatusUI(true);
       return true;
     } catch (err) {
-      console.error("Supabase init error:", err);
+      console.error(err);
       supabaseClient = null;
-      updateConnStatusUI(false);
       return false;
+    }
+  }
+
+  function loadSupabaseConfigFromStorage() {
+    const url = localStorage.getItem("supabase_url");
+    const key = localStorage.getItem("supabase_anon_key");
+    const table = localStorage.getItem("supabase_table");
+    if (url) supabaseUrlInput.value = url;
+    if (key) supabaseKeyInput.value = key;
+    if (table) supabaseTableInput.value = table;
+    if (url && key) {
+      initSupabaseClient(url, key);
+      updateConnStatusUI(true);
+    } else {
+      updateConnStatusUI(false);
     }
   }
 
   async function testSupabaseConnection() {
     if (!supabaseClient) {
-      if (!saveSupabaseConfigToLocal()) {
-        setSupabaseFeedback("Primeiro configure e salve as credenciais do Supabase.", true);
-        return false;
-      }
+      if (!saveSupabaseConfigToLocal()) return false;
     }
-    if (!supabaseClient) {
-      setSupabaseFeedback("Cliente Supabase não disponível. Verifique URL/Key.", true);
-      return false;
-    }
-    setSupabaseFeedback("Testando conexão com Supabase...", false);
+    const tableName = supabaseTableInput.value.trim() || "pedidos";
+    setSupabaseFeedback(`Testando conexão com tabela "${tableName}"...`);
     try {
-      // Teste simples: tenta consultar a tabela definida (apenas 1 registro para validar permissão)
-      const tableName = supabaseTableInput.value.trim() || "pedidos";
       const { error } = await supabaseClient.from(tableName).select("os", { count: "exact", head: true });
       if (error) {
         if (error.message.includes("relation") || error.code === "42P01") {
-          setSupabaseFeedback(`Tabela "${tableName}" não existe. Crie-a no SQL Editor do Supabase.`, true);
+          setSupabaseFeedback(`Tabela "${tableName}" não existe. Crie-a no SQL Editor.`, true);
         } else {
           setSupabaseFeedback(`Erro de permissão: ${error.message}`, true);
         }
@@ -542,234 +255,156 @@ window.onload = () => {
       setSupabaseFeedback(`Conexão OK! Tabela "${tableName}" acessível.`, false, true);
       return true;
     } catch (err) {
-      setSupabaseFeedback(`Falha no teste: ${err.message}`, true);
+      setSupabaseFeedback(`Falha: ${err.message}`, true);
       return false;
     }
   }
 
-  // Converter pedidos do formato exibição (dadosPedidos) para o formato do banco (snake_case)
   function convertToDatabaseRecords(pedidosArray) {
-    const dbRecords = [];
-    for (const pedido of pedidosArray) {
-      const record = {};
+    return pedidosArray.map(pedido => {
+      const record = { sincronizado_em: new Date().toISOString() };
       for (const [displayField, dbField] of Object.entries(MAPEAMENTO_BANCO)) {
         let valor = pedido[displayField];
         if (valor === undefined || valor === null) valor = "";
-        // Limpeza simples
         if (typeof valor === "string") valor = valor.trim();
-        // Tratamento especial: se for campo numérico ou data já tratamos, mas mantemos string para compatibilidade
         record[dbField] = valor === "" ? null : valor;
       }
-      // Adicionar campo extra opcional para controle de sincronia (timestamp)
-      record.sincronizado_em = new Date().toISOString();
-      dbRecords.push(record);
-    }
-    return dbRecords;
+      return record;
+    });
   }
 
   async function enviarPedidosParaSupabase() {
     if (!supabaseClient) {
-      const configOk = saveSupabaseConfigToLocal();
-      if (!configOk || !supabaseClient) {
-        setSupabaseFeedback("Configure corretamente a URL e chave anônima do Supabase antes de enviar.", true);
+      if (!saveSupabaseConfigToLocal()) {
+        setSupabaseFeedback("Configure e salve as credenciais do Supabase primeiro.", true);
         return;
       }
     }
-    
-    if (!dadosPedidos || dadosPedidos.length === 0) {
+    if (!dadosPedidos.length) {
       setSupabaseFeedback("Nenhum pedido carregado. Importe um CSV primeiro.", true);
       return;
     }
-    
+
     const tableName = supabaseTableInput.value.trim() || "pedidos";
     const dbRecords = convertToDatabaseRecords(dadosPedidos);
-    if (dbRecords.length === 0) {
-      setSupabaseFeedback("Nenhum registro válido para enviar (dados vazios).", true);
-      return;
-    }
-    
-    // Mostra loading
-    const originalBtnText = sendToSupabaseBtn.innerHTML;
-    sendToSupabaseBtn.innerHTML = "⏳ Enviando para Supabase...";
+    const withOS = dbRecords.filter(r => r.os && r.os.toString().trim() !== "");
+    const withoutOS = dbRecords.filter(r => !r.os || r.os.toString().trim() === "");
+
     sendToSupabaseBtn.disabled = true;
-    setSupabaseFeedback(`Enviando ${dbRecords.length} pedidos para tabela "${tableName}" (UPSERT por OS)...`, false);
-    
+    const originalText = sendToSupabaseBtn.innerHTML;
+    sendToSupabaseBtn.innerHTML = "⏳ Enviando...";
+
     try {
-      // Separa registros com OS não vazia para usar upsert com conflito, e sem OS apenas insert
-      const withOS = [];
-      const withoutOS = [];
-      for (const rec of dbRecords) {
-        if (rec.os && rec.os.toString().trim() !== "") {
-          withOS.push(rec);
-        } else {
-          withoutOS.push(rec);
-        }
-      }
-      
-      let upsertError = null;
-      let insertError = null;
+      let upsertError = null, insertError = null;
       let totalUpserted = 0, totalInserted = 0;
-      
-      // UPSERT para registros com OS (evita duplicatas baseado na coluna 'os')
-      if (withOS.length > 0) {
-        const { data: upsertData, error: upsertErr } = await supabaseClient
-          .from(tableName)
-          .upsert(withOS, { onConflict: 'os', ignoreDuplicates: false });
-        if (upsertErr) {
-          upsertError = upsertErr;
-          console.error("Erro no upsert:", upsertErr);
-        } else {
-          totalUpserted = withOS.length;
-        }
+
+      if (withOS.length) {
+        const { error } = await supabaseClient.from(tableName).upsert(withOS, { onConflict: 'os', ignoreDuplicates: false });
+        if (error) upsertError = error;
+        else totalUpserted = withOS.length;
       }
-      
-      // Insert simples para registros que não possuem OS (não há chave de conflito)
-      if (withoutOS.length > 0) {
-        const { error: insertErr } = await supabaseClient
-          .from(tableName)
-          .insert(withoutOS);
-        if (insertErr) {
-          insertError = insertErr;
-          console.error("Erro insert sem OS:", insertErr);
-        } else {
-          totalInserted = withoutOS.length;
-        }
+      if (withoutOS.length) {
+        const { error } = await supabaseClient.from(tableName).insert(withoutOS);
+        if (error) insertError = error;
+        else totalInserted = withoutOS.length;
       }
-      
-      if (upsertError && insertError) {
-        throw new Error(`UPSERT falhou: ${upsertError.message} | INSERT falhou: ${insertError.message}`);
-      } else if (upsertError) {
-        throw new Error(`Erro no UPSERT (pedidos com OS): ${upsertError.message}`);
-      } else if (insertError) {
-        throw new Error(`Erro no INSERT (pedidos sem OS): ${insertError.message}`);
-      }
-      
-      setSupabaseFeedback(`✅ Sucesso! ${totalUpserted} pedidos (com OS) atualizados/inseridos, ${totalInserted} registros adicionais salvos.`, false, true);
-      setLogMessage(`Dados salvos no Supabase (${totalUpserted + totalInserted} registros). Frete Pro pode consumir agora.`);
+
+      if (upsertError && insertError) throw new Error(`UPSERT: ${upsertError.message} | INSERT: ${insertError.message}`);
+      if (upsertError) throw new Error(`Erro no UPSERT: ${upsertError.message}`);
+      if (insertError) throw new Error(`Erro no INSERT: ${insertError.message}`);
+
+      setSupabaseFeedback(`✅ Sucesso! ${totalUpserted} upserts (com OS) + ${totalInserted} inserts (sem OS).`, false, true);
+      setLogMessage(`${totalUpserted + totalInserted} registros enviados ao Supabase.`);
     } catch (err) {
-      console.error(err);
-      setSupabaseFeedback(`Falha ao salvar: ${err.message}. Verifique se a tabela '${tableName}' existe e tem as colunas corretas (ex: os, cliente_cnpj, etc).`, true);
+      setSupabaseFeedback(`Erro: ${err.message}`, true);
     } finally {
-      sendToSupabaseBtn.innerHTML = originalBtnText;
+      sendToSupabaseBtn.innerHTML = originalText;
       sendToSupabaseBtn.disabled = false;
     }
   }
 
-  // ========== LÓGICA DE PROCESSAMENTO CSV (Original aprimorada) ==========
+  // ======================== PROCESSAMENTO CSV ========================
   function detectDelimiter(firstLine) {
-    if (!firstLine) return ",";
     const delimiters = [",", ";", "\t"];
-    let bestDelim = ",";
-    let maxCount = 0;
-    for (let delim of delimiters) {
-      const regex = new RegExp(`\\${delim}`, "g");
-      const count = (firstLine.match(regex) || []).length;
-      if (count > maxCount) {
-        maxCount = count;
-        bestDelim = delim;
-      }
+    let best = ","; let max = 0;
+    for (let d of delimiters) {
+      let count = (firstLine.match(new RegExp(`\\${d}`, "g")) || []).length;
+      if (count > max) { max = count; best = d; }
     }
-    return bestDelim;
+    return best;
   }
 
-  function cleanCell(value) {
-    if (typeof value !== "string") return value;
-    return value.replace(/^["']|["']$/g, '').trim();
+  function cleanCell(v) { return typeof v === "string" ? v.replace(/^["']|["']$/g, '').trim() : v; }
+
+  function formatarValor(col, valor) {
+    if (valor == null || valor === "") return "—";
+    let str = String(valor).trim();
+    if (col === "PESO BRUTO") {
+      let num = parseFloat(str.replace(",", "."));
+      return isNaN(num) ? str : num.toFixed(2) + " kg";
+    }
+    if (col === "Data da Entrega") {
+      let date = new Date(str.includes("/") ? str.split("/").reverse().join("-") : str);
+      return isNaN(date) ? str : date.toLocaleDateString("pt-BR");
+    }
+    return str;
   }
 
-  function formatarValor(coluna, valor) {
-    if (valor === undefined || valor === null || valor === "") return "—";
-    const strValor = String(valor).trim();
-    if (coluna === "PESO BRUTO") {
-      let numero = parseFloat(strValor.replace(",", "."));
-      if (!isNaN(numero)) return numero.toFixed(2) + " kg";
-      return strValor;
-    }
-    if (coluna === "Data da Entrega") {
-      let dataObj = null;
-      if (strValor.includes("/")) {
-        let partes = strValor.split("/");
-        if (partes.length === 3) dataObj = new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
-      } else if (strValor.includes("-")) dataObj = new Date(strValor);
-      else dataObj = new Date(strValor);
-      if (dataObj && !isNaN(dataObj.getTime())) return dataObj.toLocaleDateString('pt-BR');
-      return strValor;
-    }
-    return strValor;
-  }
+  function escapeHtml(s) { return s ? s.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])) : ""; }
 
-  function renderizarTabela(pedidosArray) {
-    if (!pedidosArray || pedidosArray.length === 0) {
+  function renderizarTabela(pedidos) {
+    if (!pedidos.length) {
       tHead.innerHTML = "";
-      tBody.innerHTML = `<tr><td colspan="${COLUNAS_ESPERADAS.length}" class="empty-message">📭 Nenhum pedido importado. Carregue um arquivo CSV válido.</td></tr>`;
+      tBody.innerHTML = `<tr><td colspan="${COLUNAS_ESPERADAS.length}" class="empty-message">📭 Nenhum pedido importado.</td></tr>`;
       return;
     }
-    const colunas = cabecalhosOriginais.length === COLUNAS_ESPERADAS.length ? cabecalhosOriginais : COLUNAS_ESPERADAS;
-    tHead.innerHTML = `<tr>${colunas.map(col => `<th>${escapeHtml(col)}</th>`).join('')}</tr>`;
-    const fragment = document.createDocumentFragment();
-    for (let pedido of pedidosArray) {
-      const tr = document.createElement('tr');
-      for (let col of colunas) {
-        const td = document.createElement('td');
-        let rawValor = pedido[col] !== undefined ? pedido[col] : "";
-        let valorFormatado = formatarValor(col, rawValor);
-        td.textContent = valorFormatado;
-        td.title = (rawValor && rawValor !== "") ? String(rawValor).substring(0, 200) : "vazio";
-        tr.appendChild(td);
-      }
-      fragment.appendChild(tr);
-    }
-    tBody.innerHTML = "";
-    tBody.appendChild(fragment);
+    const colunas = cabecalhosOriginais.length ? cabecalhosOriginais : COLUNAS_ESPERADAS;
+    tHead.innerHTML = `<tr>${colunas.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr>`;
+    tBody.innerHTML = pedidos.map(p => `<tr>${colunas.map(c => `<td title="${escapeHtml(String(p[c] || ''))}">${escapeHtml(formatarValor(c, p[c]))}</td>`).join('')}</tr>`).join('');
   }
 
   async function processAndDisplayCSV(file) {
     if (!file) { setLogMessage("Nenhum arquivo selecionado.", true); return false; }
-    setLogMessage(`Lendo ${file.name} ...`);
+    setLogMessage(`Lendo ${file.name}...`);
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const rawText = e.target.result;
-          const linhas = rawText.split(/\r?\n/).filter(line => line.trim().length > 0);
-          if (linhas.length < 2) throw new Error("Arquivo sem dados (cabeçalho + linhas)");
-          const delimiter = detectDelimiter(linhas[0]);
-          const rawHeaders = linhas[0].split(delimiter).map(h => cleanCell(h));
-          const headerIndexMap = {};
-          rawHeaders.forEach((h, idx) => { headerIndexMap[h.trim()] = idx; });
-          
-          const colunasExibir = [];
+          const linhas = e.target.result.split(/\r?\n/).filter(l => l.trim());
+          if (linhas.length < 2) throw new Error("Arquivo sem dados.");
+          const delim = detectDelimiter(linhas[0]);
+          const rawHeaders = linhas[0].split(delim).map(cleanCell);
+          const headerIndex = {};
+          rawHeaders.forEach((h, idx) => { headerIndex[h.trim()] = idx; });
+
           const indicesExibir = [];
-          for (let colNome of COLUNAS_ESPERADAS) {
-            let foundIndex = -1;
-            for (let [key, idxVal] of Object.entries(headerIndexMap)) {
-              if (key.toLowerCase() === colNome.toLowerCase() || key.replace(/\s/g,'') === colNome.replace(/\s/g,'')) {
-                foundIndex = idxVal; break;
-              }
+          const colunasExibir = [];
+          for (let col of COLUNAS_ESPERADAS) {
+            let idx = -1;
+            for (let [key, i] of Object.entries(headerIndex)) {
+              if (key.toLowerCase() === col.toLowerCase() || key.replace(/\s/g,'') === col.replace(/\s/g,'')) { idx = i; break; }
             }
-            colunasExibir.push(colNome);
-            indicesExibir.push(foundIndex);
+            colunasExibir.push(col);
+            indicesExibir.push(idx);
           }
           cabecalhosOriginais = [...colunasExibir];
-          
+
           const pedidos = [];
           for (let i = 1; i < linhas.length; i++) {
-            const linha = linhas[i];
-            if (!linha.trim()) continue;
-            let partes = linha.split(delimiter).map(p => cleanCell(p));
-            const rowData = {};
+            const partes = linhas[i].split(delim).map(cleanCell);
+            const row = {};
             for (let j = 0; j < colunasExibir.length; j++) {
               const idxOrig = indicesExibir[j];
-              rowData[colunasExibir[j]] = (idxOrig !== -1 && idxOrig < partes.length) ? partes[idxOrig] : "";
+              row[colunasExibir[j]] = (idxOrig !== -1 && idxOrig < partes.length) ? partes[idxOrig] : "";
             }
-            if (rowData["OS"] || rowData["Cliente - CNPJ"] || rowData["DESTINATARIO"]) pedidos.push(rowData);
+            if (row["OS"] || row["Cliente - CNPJ"] || row["DESTINATARIO"]) pedidos.push(row);
           }
-          if (pedidos.length === 0) throw new Error("Nenhum pedido válido encontrado. Verifique as colunas.");
+          if (!pedidos.length) throw new Error("Nenhum pedido válido encontrado.");
           dadosPedidos = pedidos;
           renderizarTabela(dadosPedidos);
           contadorSpan.innerText = `${dadosPedidos.length} pedido${dadosPedidos.length !== 1 ? 's' : ''}`;
           statusTexto.innerHTML = `📁 ${file.name} · ${dadosPedidos.length} registros`;
-          setLogMessage(`Carregado! ${dadosPedidos.length} pedidos importados.`);
+          setLogMessage(`Carregado! ${dadosPedidos.length} pedidos.`);
           lastFile = file;
           resolve(true);
         } catch (err) {
@@ -781,7 +416,7 @@ window.onload = () => {
           reject(err);
         }
       };
-      reader.onerror = () => { setLogMessage("Erro na leitura do arquivo.", true); reject(); };
+      reader.onerror = () => { setLogMessage("Erro na leitura.", true); reject(); };
       reader.readAsText(file, "UTF-8");
     });
   }
@@ -802,42 +437,38 @@ window.onload = () => {
     if (!file) { setLogMessage("Selecione um arquivo CSV.", true); return; }
     await processAndDisplayCSV(file);
   }
-  async function recarregarUltimoArquivo() {
-    if (!lastFile) { setLogMessage("Nenhum arquivo anterior carregado.", true); return; }
+  async function recarregarUltimo() {
+    if (!lastFile) { setLogMessage("Nenhum arquivo anterior.", true); return; }
     await processAndDisplayCSV(lastFile);
   }
-  
   function limparComConfirmacao() {
-    if (dadosPedidos.length === 0 && !lastFile) { setLogMessage("Nenhum dado para limpar.", true); return; }
+    if (!dadosPedidos.length && !lastFile) { setLogMessage("Nada para limpar.", true); return; }
     if (confirm("⚠️ Remover todos os pedidos da tela?")) limparDadosCompletamente();
   }
 
-  function setupDragAndDrop() { /* estilo mantido, mesma implementação não interfere */
-    const card = document.querySelector('.card:not(:first-child)');
-    if (!card) return;
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => card.addEventListener(ev, (e) => e.preventDefault()));
-    card.addEventListener('drop', (e) => {
+  function setupDragAndDrop() {
+    const area = document.querySelector('.card:first-child');
+    if (!area) return;
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => area.addEventListener(ev, e => e.preventDefault()));
+    area.addEventListener('drop', (e) => {
       const file = e.dataTransfer.files[0];
-      if (file && (file.name.match(/\.(csv|txt)$/i))) {
+      if (file && file.name.match(/\.(csv|txt)$/i)) {
         fileInput.files = e.dataTransfer.files;
         processAndDisplayCSV(file);
       } else setLogMessage("Arraste apenas CSV.", true);
     });
   }
 
-  function escapeHtml(str) { if(!str) return ""; return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
-
-  // ========== INICIALIZAÇÃO ==========
+  // Inicialização
   function init() {
     loadSupabaseConfigFromStorage();
     btnCarregar.addEventListener("click", carregarArquivoHandler);
-    btnRecarregar.addEventListener("click", recarregarUltimoArquivo);
+    btnRecarregar.addEventListener("click", recarregarUltimo);
     btnLimparTudo.addEventListener("click", limparComConfirmacao);
     saveConfigBtn.addEventListener("click", () => saveSupabaseConfigToLocal());
     testConnBtn.addEventListener("click", testSupabaseConnection);
     sendToSupabaseBtn.addEventListener("click", enviarPedidosParaSupabase);
     setupDragAndDrop();
-    setLogMessage("Pronto! Carregue seu CSV e configure Supabase para salvar.");
   }
   init();
 </script>
