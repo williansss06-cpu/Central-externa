@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Consulta de Pedidos | Cliente</title>
+  <title>Consulta de Pedidos | Cliente + Ferramentas</title>
   <style>
     * {
       margin: 0;
@@ -61,7 +61,8 @@
       color: #1e293b;
     }
 
-    .upload-area {
+    /* TOOLBAR com botões (melhoria estilo Supabase) */
+    .toolbar {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
@@ -102,6 +103,14 @@
 
     button:hover {
       background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+
+    .btn-danger {
+      background: #dc2626;
+    }
+    .btn-danger:hover {
+      background: #b91c1c;
       transform: translateY(-1px);
     }
 
@@ -166,7 +175,7 @@
       background-color: #fefce8;
     }
 
-    .empty-message {
+    .empty-message, .loading-message {
       text-align: center;
       padding: 3rem;
       color: #64748b;
@@ -181,6 +190,7 @@
       padding: 0.5rem 1rem;
       border-radius: 60px;
       display: inline-block;
+      transition: 0.1s;
     }
 
     footer {
@@ -196,17 +206,20 @@
   <div class="card">
     <div class="header">
       <h1>📋 Meus Pedidos</h1>
-      <div class="badge-cliente">Área do Cliente · Consulta direta</div>
+      <div class="badge-cliente">Área do Cliente · CSV + Ferramentas</div>
     </div>
-    <p style="color:#475569; margin-bottom: 0.75rem;">Importe seu arquivo CSV com os pedidos e visualize todas as informações sem alterações.</p>
+    <p style="color:#475569; margin-bottom: 0.75rem;">Importe seu arquivo CSV com os pedidos e visualize todas as informações sem alterações. Utilize os botões para recarregar ou limpar a lista.</p>
     
-    <div class="upload-area">
-      <input type="file" id="csvFileInput" accept=".csv, .txt, .xlsx?não, apenas CSV" />
+    <!-- TOOLBAR com melhorias: botões extras -->
+    <div class="toolbar">
+      <input type="file" id="csvFileInput" accept=".csv, .txt" />
       <button id="btnCarregar">📂 Carregar pedidos</button>
+      <button id="btnRecarregar" title="Recarrega o último arquivo carregado">🔄 Recarregar</button>
+      <button id="btnLimparTudo" class="btn-danger">🗑️ Limpar pedidos</button>
     </div>
     
     <div class="info-status" id="statusBar">
-      <span>📄 Nenhum arquivo carregado</span>
+      <span id="statusTexto">📄 Nenhum arquivo carregado</span>
       <span class="contador" id="contadorLinhas">0 pedidos</span>
     </div>
     <div id="logMessage" class="log-simple">✅ Pronto. Selecione um CSV e clique em "Carregar pedidos".</div>
@@ -223,10 +236,10 @@
         <tbody id="tBody">
           <tr><td colspan="20" class="empty-message">Nenhum pedido carregado ainda. Faça upload do CSV.</td></tr>
         </tbody>
-      </table>
+      80
     </div>
     <div style="padding: 0.8rem 1.5rem; border-top: 1px solid #e2e8f0; font-size: 12px; color:#5b6e8c; display: flex; gap: 16px;">
-      <span>🔍 Dica: O CSV deve conter as colunas abaixo na primeira linha (separador automático)</span>
+      <span>🔍 Dica: O CSV deve conter as colunas na primeira linha (separador automático).</span>
     </div>
   </div>
   <footer>
@@ -235,7 +248,9 @@
 </div>
 
 <script>
-  // Mapeamento esperado das colunas para exibição (igualmente ordenado)
+  // ============================================================
+  // Mapeamento esperado das colunas (ordem e exibição completa)
+  // ============================================================
   const COLUNAS_ESPERADAS = [
     "Cliente - CNPJ", "OS", "COD. DEPOSITANTE", "DEPOSITANTE", "CNPJ", "DESTINATARIO", 
     "CEP", "LOGRADOURO", "NUMERO", "BAIRRO", "CIDADE", "UF", "Job", "CODIGO PRODUTO", 
@@ -243,36 +258,126 @@
     "OBS", "Data da Entrega", "MODALIDADE"
   ];
 
-  let dadosPedidos = [];      // armazena array de objetos com os valores
-  let cabecalhosOriginais = []; // guarda os headers reais do CSV
+  let dadosPedidos = [];          // Array de objetos com valores
+  let cabecalhosOriginais = [];    // Nomes das colunas exibidas (na ordem)
+  let lastFile = null;             // Guarda o último arquivo carregado com sucesso
 
   // DOM elements
   const fileInput = document.getElementById("csvFileInput");
   const btnCarregar = document.getElementById("btnCarregar");
+  const btnRecarregar = document.getElementById("btnRecarregar");
+  const btnLimparTudo = document.getElementById("btnLimparTudo");
   const tHead = document.getElementById("tHead");
   const tBody = document.getElementById("tBody");
   const contadorSpan = document.getElementById("contadorLinhas");
-  const statusBarSpan = document.querySelector("#statusBar span:first-child");
+  const statusTexto = document.getElementById("statusTexto");
   const logMsgDiv = document.getElementById("logMessage");
 
+  // ========== FUNÇÕES DE UI / LOG ==========
   function setLogMessage(msg, isError = false) {
     logMsgDiv.innerHTML = isError ? `❌ ${msg}` : `✅ ${msg}`;
     logMsgDiv.style.color = isError ? "#b91c1c" : "#2c5f2d";
     logMsgDiv.style.background = isError ? "#fee2e2" : "#e6f7e6";
     setTimeout(() => {
-      if(!isError) {
-        // depois de 2s, volta ao normal só se não houver erro crítico
-        if(logMsgDiv.innerHTML.includes("✅")) {
-          setTimeout(() => {
-            if(logMsgDiv.innerHTML.includes("✅") && !logMsgDiv.innerHTML.includes("❌"))
-              logMsgDiv.style.background = "#f1f5f9";
-          }, 2500);
-        }
+      if (!isError && logMsgDiv.innerHTML === `✅ ${msg}`) {
+        logMsgDiv.style.background = "#f1f5f9";
+        logMsgDiv.style.color = "#475569";
       }
-    }, 2000);
+    }, 3000);
   }
 
-  // Detecta delimitador (vírgula, ponto e virgula, tab)
+  // Mostra estado de carregamento na tabela
+  function setLoadingTabela(loading = true) {
+    if (loading) {
+      tBody.innerHTML = `<tr><td colspan="${COLUNAS_ESPERADAS.length}" class="loading-message">⏳ Processando arquivo, aguarde...</td></tr>`;
+    }
+  }
+
+  // Limpa completamente a tabela e os dados em memória
+  function limparDadosCompletamente() {
+    dadosPedidos = [];
+    cabecalhosOriginais = [];
+    lastFile = null;
+    // Reset do campo file input para permitir carregar novamente o mesmo arquivo se desejar
+    fileInput.value = "";
+    renderizarTabela([]);
+    contadorSpan.innerText = "0 pedidos";
+    statusTexto.innerHTML = "📄 Nenhum arquivo carregado";
+    setLogMessage("Lista de pedidos limpa. Envie um novo CSV para carregar.");
+  }
+
+  // ========== FORMATAÇÃO ESPECÍFICA (MELHORIA: PESO + DATA) ==========
+  function formatarValor(coluna, valor) {
+    if (valor === undefined || valor === null || valor === "") return "—";
+    const strValor = String(valor).trim();
+    
+    // Formatação para peso bruto (kg)
+    if (coluna === "PESO BRUTO") {
+      let numero = parseFloat(strValor.replace(",", "."));
+      if (!isNaN(numero)) {
+        return numero.toFixed(2) + " kg";
+      }
+      return strValor;
+    }
+    
+    // Formatação para Data da Entrega
+    if (coluna === "Data da Entrega") {
+      // Tenta converter para data (ISO, dd/mm/aaaa, etc)
+      let dataObj = null;
+      // se já estiver no formato dd/mm/aaaa ou aaaa-mm-dd
+      if (strValor.includes("/")) {
+        let partes = strValor.split("/");
+        if (partes.length === 3) {
+          dataObj = new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
+        }
+      } else if (strValor.includes("-")) {
+        dataObj = new Date(strValor);
+      } else {
+        dataObj = new Date(strValor);
+      }
+      if (dataObj && !isNaN(dataObj.getTime())) {
+        return dataObj.toLocaleDateString('pt-BR');
+      }
+      return strValor;
+    }
+    
+    // Se for string muito longa, encurtar com title
+    return strValor;
+  }
+
+  // Renderiza a tabela com os dados (suporta array vazio)
+  function renderizarTabela(pedidosArray) {
+    if (!pedidosArray || pedidosArray.length === 0) {
+      tHead.innerHTML = "";
+      tBody.innerHTML = `<tr><td colspan="${COLUNAS_ESPERADAS.length}" class="empty-message">📭 Nenhum pedido importado. Carregue um arquivo CSV válido.</td></tr>`;
+      return;
+    }
+    
+    // Cabeçalhos: usa cabecalhosOriginais (que segue COLUNAS_ESPERADAS)
+    const colunas = (cabecalhosOriginais.length === COLUNAS_ESPERADAS.length) ? cabecalhosOriginais : COLUNAS_ESPERADAS;
+    
+    // Montar cabeçalho da tabela
+    tHead.innerHTML = `<tr>${colunas.map(col => `<th>${escapeHtml(col)}</th>`).join('')}</tr>`;
+    
+    // Corpo da tabela com fragmento para performance
+    const fragment = document.createDocumentFragment();
+    for (let pedido of pedidosArray) {
+      const tr = document.createElement('tr');
+      for (let col of colunas) {
+        const td = document.createElement('td');
+        let rawValor = pedido[col] !== undefined && pedido[col] !== null ? pedido[col] : "";
+        let valorFormatado = formatarValor(col, rawValor);
+        td.textContent = valorFormatado;
+        td.title = (rawValor && rawValor !== "") ? String(rawValor).substring(0, 200) : "vazio";
+        tr.appendChild(td);
+      }
+      fragment.appendChild(tr);
+    }
+    tBody.innerHTML = "";
+    tBody.appendChild(fragment);
+  }
+
+  // ========== LÓGICA DE DETECÇÃO DE DELIMITADOR ==========
   function detectDelimiter(firstLine) {
     if (!firstLine) return ",";
     const delimiters = [",", ";", "\t"];
@@ -289,19 +394,19 @@
     return bestDelim;
   }
 
-  // Limpa caracteres de aspas no início/fim
   function cleanCell(value) {
     if (typeof value !== "string") return value;
     return value.replace(/^["']|["']$/g, '').trim();
   }
 
-  // Processa arquivo CSV e exibe sem nenhuma classificação adicional
+  // ========== PROCESSAMENTO PRINCIPAL DO CSV ==========
   async function processAndDisplayCSV(file) {
     if (!file) {
-      setLogMessage("Selecione um arquivo CSV primeiro.", true);
+      setLogMessage("Nenhum arquivo selecionado. Use o botão ou arraste um CSV.", true);
       return false;
     }
-
+    
+    setLoadingTabela(true);
     setLogMessage(`Lendo arquivo: ${file.name} ...`);
     
     return new Promise((resolve, reject) => {
@@ -311,30 +416,24 @@
           const rawText = e.target.result;
           const linhas = rawText.split(/\r?\n/).filter(line => line.trim().length > 0);
           if (linhas.length < 2) {
-            throw new Error("Arquivo vazio ou sem dados válidos (pelo menos cabeçalho + 1 linha)");
+            throw new Error("Arquivo vazio ou sem dados válidos (cabeçalho + pelo menos 1 linha)");
           }
-
-          // Detectar separador
+          
           const delimiter = detectDelimiter(linhas[0]);
           setLogMessage(`Separador detectado: ${delimiter === "\t" ? "TAB" : delimiter === ";" ? "PONTO E VÍRGULA" : "VÍRGULA"}`);
-
-          // Processar cabeçalho (primeira linha)
-          const rawHeaders = linhas[0].split(delimiter).map(h => cleanCell(h));
           
-          // Mapear índices: comparar com COLUNAS_ESPERADAS para exibir na ordem correta
-          // Mas vamos preservar todos os dados, e exibir conforme ordem das colunas esperadas (ou as que existem)
+          // Processar cabeçalho original
+          const rawHeaders = linhas[0].split(delimiter).map(h => cleanCell(h));
           const headerIndexMap = {};
           rawHeaders.forEach((h, idx) => {
-            // normalização: remove espaços extras e case-insensitive match
             let normalized = h.trim();
             headerIndexMap[normalized] = idx;
           });
-
-          // Construir lista de colunas que serão exibidas (usando a ordem de COLUNAS_ESPERADAS)
+          
+          // Construir lista de colunas na ordem esperada, mapeando as que existem
           const colunasExibir = [];
           const indicesExibir = [];
           for (let colNome of COLUNAS_ESPERADAS) {
-            // Busca exata ou aproximada (caso tenha diferença de espaços, acentos? Vamos tentar match simples)
             let foundIndex = -1;
             for (let [key, idxVal] of Object.entries(headerIndexMap)) {
               if (key.toLowerCase() === colNome.toLowerCase() || key.replace(/\s/g,'') === colNome.replace(/\s/g,'')) {
@@ -342,31 +441,21 @@
                 break;
               }
             }
-            // se não encontrar, considera que a coluna não existe no CSV
-            if (foundIndex !== -1) {
-              colunasExibir.push(colNome);
-              indicesExibir.push(foundIndex);
-            } else {
-              // Coluna não presente no CSV, iremos mostrar vazio
-              colunasExibir.push(colNome);
-              indicesExibir.push(-1);
-            }
+            colunasExibir.push(colNome);
+            indicesExibir.push(foundIndex);
           }
-
-          // Armazenar cabeçalhos para a tabela
-          cabecalhosOriginais = colunasExibir;
-
+          
+          cabecalhosOriginais = [...colunasExibir];
+          
           // Processar linhas de dados
           const pedidos = [];
           for (let i = 1; i < linhas.length; i++) {
             const linha = linhas[i];
             if (!linha.trim()) continue;
             
-            // Dividir respeitando o delimitador (simples, sem considerar aspas internas complexas)
             let partes = linha.split(delimiter);
             partes = partes.map(p => cleanCell(p));
             
-            // Criar objeto usando as colunas esperadas
             const rowData = {};
             for (let j = 0; j < colunasExibir.length; j++) {
               const idxOrig = indicesExibir[j];
@@ -377,19 +466,16 @@
               }
             }
             
-            // Verifica se pelo menos a coluna "OS" (número do pedido) tem valor, caso contrário pode ignorar (opcional)
+            // Incluir mesmo sem OS (mantém máximo de informação)
             if (rowData["OS"] && rowData["OS"].toString().trim() !== "") {
               pedidos.push(rowData);
-            } else {
-              // Aceita mesmo sem OS? para não perder dados, mas damos um aviso sutil
-              if (rowData["Cliente - CNPJ"] || rowData["DESTINATARIO"]) {
-                pedidos.push(rowData);
-              }
+            } else if (rowData["Cliente - CNPJ"] || rowData["DESTINATARIO"] || rowData["CODIGO PRODUTO"]) {
+              pedidos.push(rowData);
             }
           }
           
           if (pedidos.length === 0) {
-            throw new Error("Nenhum pedido válido encontrado. Verifique o formato do CSV (colunas esperadas: OS, Cliente - CNPJ, etc).");
+            throw new Error("Nenhum pedido válido encontrado. Verifique as colunas do CSV (esperado: OS, Cliente - CNPJ, etc).");
           }
           
           dadosPedidos = pedidos;
@@ -397,69 +483,130 @@
           
           const total = dadosPedidos.length;
           contadorSpan.innerText = `${total} pedido${total !== 1 ? 's' : ''}`;
-          statusBarSpan.innerHTML = `📁 ${file.name} · ${total} registros`;
+          statusTexto.innerHTML = `📁 ${file.name} · ${total} registros`;
           setLogMessage(`Carregado com sucesso! ${total} pedidos importados.`);
+          
+          // Guarda referência do último arquivo carregado para recarregar depois
+          lastFile = file;
           resolve(true);
         } catch (err) {
           setLogMessage(`Erro: ${err.message}`, true);
           console.error(err);
+          // Se der erro, limpa dados e mostra tabela vazia
+          dadosPedidos = [];
+          cabecalhosOriginais = [];
+          renderizarTabela([]);
+          contadorSpan.innerText = "0 pedidos";
+          statusTexto.innerHTML = "⚠️ Falha no carregamento";
           reject(err);
+        } finally {
+          // remove efeito loading caso ainda exista
+          if (dadosPedidos.length === 0 && !tBody.innerHTML.includes("Nenhum pedido")) {
+            // se não carregou nada, manter mensagem amigável
+            tBody.innerHTML = `<tr><td colspan="${COLUNAS_ESPERADAS.length}" class="empty-message">Erro ao processar: verifique o formato do CSV.</td></tr>`;
+          }
         }
       };
       reader.onerror = () => {
         setLogMessage("Erro na leitura do arquivo.", true);
+        setLoadingTabela(false);
         reject(new Error("Falha ao ler o arquivo"));
       };
       reader.readAsText(file, "UTF-8");
     });
   }
 
-  // Renderiza a tabela com todos os dados, sem adicionar colunas extras de classificação
-  function renderizarTabela(pedidosArray) {
-    if (!pedidosArray || pedidosArray.length === 0) {
-      tHead.innerHTML = "";
-      tBody.innerHTML = `<tr><td colspan="20" class="empty-message">Nenhum pedido corresponde ao filtro ou arquivo vazio</td></tr>`;
+  // ========== FUNÇÃO RECARREGAR ==========
+  async function recarregarUltimoArquivo() {
+    if (!lastFile) {
+      setLogMessage("Nenhum arquivo foi carregado anteriormente. Selecione um CSV primeiro.", true);
+      return;
+    }
+    setLogMessage(`Recarregando ${lastFile.name} ...`);
+    await processAndDisplayCSV(lastFile);
+  }
+
+  // Ação de limpar com confirmação robusta (estilo Supabase)
+  function limparComConfirmacao() {
+    if (dadosPedidos.length === 0 && !lastFile) {
+      setLogMessage("Nenhum dado para limpar. Carregue um arquivo antes.", true);
       return;
     }
     
-    // Usar cabeçalhos armazenados (colunas esperadas que existem no CSV)
-    const colunas = cabecalhosOriginais.length ? cabecalhosOriginais : COLUNAS_ESPERADAS;
+    const confirmar = confirm("⚠️ ATENÇÃO: Esta ação irá remover TODOS os pedidos carregados na tela. Tem certeza?");
+    if (!confirmar) return;
     
-    // Montar cabeçalho da tabela
-    tHead.innerHTML = `<tr>${colunas.map(col => `<th>${escapeHtml(col)}</th>`).join('')}</tr>`;
+    const confirmacaoFinal = confirm("🛑 Remoção completa! Deseja realmente limpar a lista de pedidos?");
+    if (!confirmacaoFinal) return;
     
-    // Montar corpo
-    const fragment = document.createDocumentFragment();
-    const tbodyRows = [];
-    
-    for (let pedido of pedidosArray) {
-      const tr = document.createElement('tr');
-      for (let col of colunas) {
-        const td = document.createElement('td');
-        let valor = pedido[col] !== undefined && pedido[col] !== null ? pedido[col] : "";
-        // tratamento especial para valores numéricos manter formatação simples
-        if (typeof valor === 'string' && valor.length > 50) {
-          valor = valor.substring(0, 47) + "...";
-        }
-        td.textContent = valor || "—";
-        td.title = (pedido[col] || "") !== "" ? pedido[col] : "vazio";
-        tr.appendChild(td);
-      }
-      tbodyRows.push(tr);
+    // Limpeza completa
+    limparDadosCompletamente();
+    setLogMessage("🗑️ Lista de pedidos foi limpa com sucesso.");
+  }
+
+  // ========== EVENTOS E DRAG & DROP ==========
+  async function carregarArquivoHandler() {
+    const file = fileInput.files[0];
+    if (!file) {
+      setLogMessage("Por favor, selecione um arquivo CSV.", true);
+      return;
     }
     
-    // Limpar e adicionar linhas
-    tBody.innerHTML = "";
-    for (let row of tbodyRows) {
-      tBody.appendChild(row);
+    if (!file.name.match(/\.(csv|txt)$/i) && file.type !== "text/csv" && !file.type.includes("csv")) {
+      setLogMessage("Formato não suportado. Envie um arquivo .csv ou .txt com separador vírgula, ponto-e-vírgula ou TAB.", true);
+      return;
     }
     
-    // Adicionar scroll sutil caso tabela seja muito grande
-    const wrapper = document.querySelector('.table-wrapper');
-    if (wrapper) wrapper.scrollLeft = 0;
+    await processAndDisplayCSV(file);
   }
   
-  // Função auxiliar para escapar HTML seguro
+  // Configurar arrastar e soltar na área do card
+  function setupDragAndDrop() {
+    const cardDrop = document.querySelector('.card');
+    if (!cardDrop) return;
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      cardDrop.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+      cardDrop.addEventListener(eventName, highlight, false);
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+      cardDrop.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+      cardDrop.style.border = "2px dashed #3b82f6";
+      cardDrop.style.background = "#f8fafd";
+    }
+    function unhighlight() {
+      cardDrop.style.border = "";
+      cardDrop.style.background = "";
+    }
+    
+    cardDrop.addEventListener('drop', handleDrop, false);
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length) {
+        const droppedFile = files[0];
+        if (droppedFile.name.match(/\.(csv|txt)$/i) || droppedFile.type.includes("csv")) {
+          fileInput.files = files;
+          processAndDisplayCSV(droppedFile);
+        } else {
+          setLogMessage("Arquivo inválido. Arraste apenas .csv ou .txt", true);
+        }
+      }
+      unhighlight();
+    }
+  }
+  
   function escapeHtml(str) {
     if (!str) return "";
     return str.replace(/[&<>]/g, function(m) {
@@ -470,82 +617,21 @@
     });
   }
   
-  // Evento de clique no botão carregar
-  async function carregarArquivo() {
-    const file = fileInput.files[0];
-    if (!file) {
-      setLogMessage("Por favor, selecione um arquivo CSV.", true);
-      return;
-    }
-    
-    // Aceita apenas arquivos CSV / text / ou .txt
-    if (!file.name.match(/\.(csv|txt)$/i) && file.type !== "text/csv" && !file.type.includes("csv")) {
-      setLogMessage("Formato não suportado. Envie um arquivo .csv ou .txt com separador vírgula, ponto-e-vírgula ou TAB.", true);
-      return;
-    }
-    
-    // Limpa estado anterior antes de carregar novo
-    dadosPedidos = [];
-    cabecalhosOriginais = [];
-    await processAndDisplayCSV(file);
-  }
-  
-  // Adicionar evento de arrastar e soltar? Melhorias opcionais: permitir drag & drop?
-  function setupDragAndDrop() {
-    const cardDrop = document.querySelector('.card');
-    if (!cardDrop) return;
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      cardDrop.addEventListener(eventName, preventDefaults, false);
-    });
-    function preventDefaults(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    ['dragenter', 'dragover'].forEach(eventName => {
-      cardDrop.addEventListener(eventName, highlight, false);
-    });
-    ['dragleave', 'drop'].forEach(eventName => {
-      cardDrop.addEventListener(eventName, unhighlight, false);
-    });
-    function highlight() {
-      cardDrop.style.border = "2px dashed #3b82f6";
-      cardDrop.style.background = "#f8fafd";
-    }
-    function unhighlight() {
-      cardDrop.style.border = "";
-      cardDrop.style.background = "";
-    }
-    cardDrop.addEventListener('drop', handleDrop, false);
-    function handleDrop(e) {
-      const dt = e.dataTransfer;
-      const files = dt.files;
-      if (files.length) {
-        fileInput.files = files;
-        carregarArquivo();
-      }
-      unhighlight();
-    }
-  }
-  
-  // Inicializar busca/filtro? O cliente não pediu regras, mas um simples campo de pesquisa pode ajudar sem alterar regras de negócio.
-  // Como não pediu filtro para não poluir, vou manter só exibição. Mas uma busca rápida pode ser útil.
-  // Decidi adicionar um pequeno campo de filtro por palavra-chave (opcional, sem interferir na classificação)
-  // Porém, o pedido original é apenas informações dos pedidos. Vou manter bem minimalista, sem filtro adicional, mas vou garantir que nenhuma automação extra aconteça.
-  
-  // Inicialização e pequeno helper
-  btnCarregar.addEventListener("click", carregarArquivo);
-  
-  // Caso o usuário tecle Enter no file input? não necessário
-  window.addEventListener("load", () => {
+  // ========== INICIALIZAÇÃO ==========
+  function init() {
+    btnCarregar.addEventListener("click", carregarArquivoHandler);
+    btnRecarregar.addEventListener("click", recarregarUltimoArquivo);
+    btnLimparTudo.addEventListener("click", limparComConfirmacao);
     setupDragAndDrop();
-    // Preencher demonstração apenas se quiser sample? sem dados automáticos para evitar confusão
-    setLogMessage("Carregue um CSV com as colunas listadas.");
-    // Mostrar exemplo das colunas esperadas como tooltip opcional
-    const hintBox = document.querySelector("footer");
-    if(hintBox) {
-      hintBox.title = "Formato aceito: separador vírgula, ponto e vírgula ou TAB. Colunas: Cliente - CNPJ, OS, COD. DEPOSITANTE, DEPOSITANTE, CNPJ, DESTINATARIO, CEP, LOGRADOURO, NUMERO, BAIRRO, CIDADE, UF, Job, CODIGO PRODUTO, PRODUTO3, PESO BRUTO, ALTURA, LARGURA, PROFUNDIDADE, METROCUBICO, OBS, Data da Entrega, MODALIDADE";
+    setLogMessage("Pronto! Carregue um CSV ou arraste o arquivo na área.");
+    // Caso queira uma dica das colunas esperadas no footer
+    const hintFooter = document.querySelector("footer");
+    if (hintFooter) {
+      hintFooter.title = "Formato aceito: separador vírgula, ponto e vírgula ou TAB. Colunas esperadas: Cliente - CNPJ, OS, COD. DEPOSITANTE, DEPOSITANTE, CNPJ, DESTINATARIO, CEP, LOGRADOURO, NUMERO, BAIRRO, CIDADE, UF, Job, CODIGO PRODUTO, PRODUTO3, PESO BRUTO, ALTURA, LARGURA, PROFUNDIDADE, METROCUBICO, OBS, Data da Entrega, MODALIDADE";
     }
-  });
+  }
+  
+  init();
 </script>
 </body>
 </html>
