@@ -155,51 +155,73 @@ async function lerCSV(){
     renderPreviewCompleto();
 }
 
-function renderPreviewCompleto(){
+function renderPreviewCompleto() {
 
     let html = `
     <tr>
-        <th>Pedido</th>
         <th>Cliente CNPJ</th>
-        <th>Depositante</th>
-        <th>Destinatário</th>
-        <th>Cidade</th>
-        <th>UF</th>
+        <th>Pedido</th>
+        <th>COD. DEPOSITANTE</th>
+        <th>DEPOSITANTE</th>
+        <th>CNPJ</th>
+        <th>DESTINATARIO</th>
         <th>CEP</th>
-        <th>Peso</th>
-        <th>Volume</th>
-        <th>Modalidade</th>
-        <th>Status</th>
-        <th>Destino</th>
+        <th>LOGRADOURO</th>
+        <th>NUMERO</th>
+        <th>BAIRRO</th>
+        <th>CIDADE</th>
+        <th>UF</th>
+        <th>Job</th>
+        <th>CODIGO PRODUTO</th>
+        <th>DESCRIÇÃO</th>
+        <th>PESO BRUTO</th>
+        <th>ALTURA</th>
+        <th>LARGURA</th>
+        <th>PROFUNDIDADE</th>
+        <th>METROCUBICO</th>
+        <th>OBS</th>
+        <th>PREVISÃO DE DESPACHO</th>
+        <th>DATA ENTREGA</th>
+        <th>MODALIDADE</th>
+        <th>STATUS</th>
     </tr>
     `;
 
     pedidos.slice(0,100).forEach(p => {
 
-        const destino = p.resultado?.destino || "-";
-        const cor = destino === "operacao" ? "#16a34a" : "#f59e0b";
-
         html += `
         <tr>
-            <td>${p.os}</td>
-            <td>${p.cliente_cnpj || "-"}</td>
-            <td>${p.depositante || "-"}</td>
-            <td>${p.destinatario || "-"}</td>
-            <td>${p.cidade || "-"}</td>
-            <td>${p.uf || "-"}</td>
-            <td>${p.cep || "-"}</td>
-            <td>${p.peso_total}</td>
-            <td>${p.volume_total}</td>
-            <td>${p.modalidade}</td>
-            <td>${p.status}</td>
-            <td style="color:${cor};font-weight:bold">${destino}</td>
+            <td>${p["Cliente - CNPJ"] || ""}</td>
+            <td>${p["Pedido"] || ""}</td>
+            <td>${p["COD. DEPOSITANTE"] || ""}</td>
+            <td>${p["DEPOSITANTE"] || ""}</td>
+            <td>${p["CNPJ"] || ""}</td>
+            <td>${p["DESTINATARIO"] || ""}</td>
+            <td>${p["CEP"] || ""}</td>
+            <td>${p["LOGRADOURO"] || ""}</td>
+            <td>${p["NUMERO"] || ""}</td>
+            <td>${p["BAIRRO"] || ""}</td>
+            <td>${p["CIDADE"] || ""}</td>
+            <td>${p["UF"] || ""}</td>
+            <td>${p["Job"] || ""}</td>
+            <td>${p["CODIGO PRODUTO"] || ""}</td>
+            <td>${p["DESCRIÇÃO"] || ""}</td>
+            <td>${p["PESO BRUTO"] || ""}</td>
+            <td>${p["ALTURA"] || ""}</td>
+            <td>${p["LARGURA"] || ""}</td>
+            <td>${p["PROFUNDIDADE"] || ""}</td>
+            <td>${p["METROCUBICO"] || ""}</td>
+            <td>${p["OBS"] || ""}</td>
+            <td>${p["PREVISÃO DE DESPACHO"] || ""}</td>
+            <td>${p["Data da Entrega"] || ""}</td>
+            <td>${p["MODALIDADE"] || ""}</td>
+            <td>${p["STATUS"] || ""}</td>
         </tr>
         `;
     });
 
-    document.getElementById("preview").innerHTML = html;
+    document.querySelector("#previewTable").innerHTML = html;
 }
-
 async function enviarSupabase(){
     if(!pedidos.length){
         alert("Nenhum pedido carregado");
