@@ -439,7 +439,7 @@ const MAPEAMENTO_BANCO = {
           }
           cabecalhosOriginais = [...colunasExibir];
 
-          const pedidos = [];
+         const pedidos = [];
 
 for (let i = 1; i < linhas.length; i++) {
 
@@ -513,6 +513,37 @@ setLogMessage(`Carregado! ${dadosPedidos.length} pedidos.`);
 lastFile = file;
 
 resolve(true);
+
+} catch (err) {
+
+  setLogMessage(`Erro: ${err.message}`, true);
+
+  dadosPedidos = [];
+  cabecalhosOriginais = [];
+
+  renderizarTabela([]);
+
+  contadorSpan.innerText = "0 pedidos";
+
+  statusTexto.innerHTML = "⚠️ Falha";
+
+  reject(err);
+}
+
+};
+
+reader.onerror = () => {
+
+  setLogMessage("Erro na leitura.", true);
+
+  reject();
+};
+
+reader.readAsText(file, "UTF-8");
+
+});
+
+}
   function limparDadosCompletamente() {
     dadosPedidos = [];
     cabecalhosOriginais = [];
