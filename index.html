@@ -440,37 +440,79 @@ const MAPEAMENTO_BANCO = {
           cabecalhosOriginais = [...colunasExibir];
 
           const pedidos = [];
-          for (let i = 1; i < linhas.length; i++) {
-            const partes = linhas[i].split(delim).map(cleanCell);
-            const row = {};
-            for (let j = 0; j < colunasExibir.length; j++) {
-              const idxOrig = indicesExibir[j];
-              row[colunasExibir[j]] = (idxOrig !== -1 && idxOrig < partes.length) ? partes[idxOrig] : "";
-            }
-            if (row["OS"] || row["Cliente - CNPJ"] || row["DESTINATARIO"]) pedidos.push(row);
-          }
-          if (!pedidos.length) throw new Error("Nenhum pedido válido encontrado.");
-          dadosPedidos = pedidos;
-          renderizarTabela(dadosPedidos);
-          contadorSpan.innerText = `${dadosPedidos.length} pedido${dadosPedidos.length !== 1 ? 's' : ''}`;
-          statusTexto.innerHTML = `📁 ${file.name} · ${dadosPedidos.length} registros`;
-          setLogMessage(`Carregado! ${dadosPedidos.length} pedidos.`);
-          lastFile = file;
-          resolve(true);
-        } catch (err) {
-          setLogMessage(`Erro: ${err.message}`, true);
-          dadosPedidos = []; cabecalhosOriginais = [];
-          renderizarTabela([]);
-          contadorSpan.innerText = "0 pedidos";
-          statusTexto.innerHTML = "⚠️ Falha";
-          reject(err);
-        }
-      };
-      reader.onerror = () => { setLogMessage("Erro na leitura.", true); reject(); };
-      reader.readAsText(file, "UTF-8");
-    });
+
+for (let i = 1; i < linhas.length; i++) {
+
+  const partes = linhas[i]
+    .split(delim)
+    .map(cleanCell);
+
+  const row = {};
+
+  for (let j = 0; j < colunasExibir.length; j++) {
+
+    const idxOrig = indicesExibir[j];
+
+    let valor = (
+      idxOrig !== -1 &&
+      idxOrig < partes.length
+    )
+      ? partes[idxOrig]
+      : "";
+
+    // 🔥 Normalização dos campos numéricos
+    if (
+      [
+        "QUANTIDADE",
+        "PESO BRUTO",
+        "ALTURA",
+        "LARGURA",
+        "PROFUNDIDADE",
+        "METROCUBICO"
+      ].includes(colunasExibir[j])
+    ) {
+
+      valor = valor
+        ? parseFloat(
+            String(valor)
+              .trim()
+              .replace(/\./g, "")
+              .replace(",", ".")
+          ) || 0
+        : 0;
+    }
+
+    row[colunasExibir[j]] = valor;
   }
 
+  // 🔥 Apenas registros válidos
+  if (
+    row["OS"] ||
+    row["Cliente - CNPJ"] ||
+    row["DESTINATARIO"]
+  ) {
+    pedidos.push(row);
+  }
+}
+
+if (!pedidos.length)
+  throw new Error("Nenhum pedido válido encontrado.");
+
+dadosPedidos = pedidos;
+
+renderizarTabela(dadosPedidos);
+
+contadorSpan.innerText =
+  `${dadosPedidos.length} pedido${dadosPedidos.length !== 1 ? 's' : ''}`;
+
+statusTexto.innerHTML =
+  `📁 ${file.name} · ${dadosPedidos.length} registros`;
+
+setLogMessage(`Carregado! ${dadosPedidos.length} pedidos.`);
+
+lastFile = file;
+
+resolve(true);
   function limparDadosCompletamente() {
     dadosPedidos = [];
     cabecalhosOriginais = [];
