@@ -310,68 +310,123 @@ const MAPEAMENTO_BANCO = {
     }
   }
 
-  function convertToDatabaseRecords(pedidosArray) {
-    return pedidosArray.map(pedido => {
-      const record = { sincronizado_em: new Date().toISOString() };
-      for (const [displayField, dbField] of Object.entries(MAPEAMENTO_BANCO)) {
-        let valor = pedido[displayField];
-        if (valor === undefined || valor === null) valor = "";
-        if (typeof valor === "string") valor = valor.trim();
+ function convertToDatabaseRecords(pedidosArray) {
+  return pedidosArray.map(pedido => {
+    const record = { 
+      sincronizado_em: new Date().toISOString() 
+    };
+    
+    for (const [displayField, dbField] of Object.entries(MAPEAMENTO_BANCO)) {
+      let valor = pedido[displayField];
+      
+      // Tratar valores undefined/null
+      if (valor === undefined || valor === null) {
+        valor = "";
+      }
+      
+      // Converter números corretamente
+      if (typeof valor === "number") {
+        // Se for número, manter como número
+        record[dbField] = valor;
+      } else if (typeof valor === "string") {
+        valor = valor.trim();
+        
+        // Tentar converter campos numéricos
+        if (["quantidade", "peso_bruto", "altura", "largura", "profundidade", "metro_cubico"].includes(dbField)) {
+          const num = parseFloat(valor.replace(",", "."));
+          record[dbField] = isNaN(num) ? null : num;
+        } else {
+          record[dbField] = valor === "" ? null : valor;
+        }
+      } else {
         record[dbField] = valor === "" ? null : valor;
       }
-      return record;
-    });
-  }
-
-  async function enviarPedidosParaSupabase() {
-    if (!supabaseClient) {
-      if (!saveSupabaseConfigToLocal()) {
-        setSupabaseFeedback("Configure e salve as credenciais do Supabase primeiro.", true);
-        return;
-      }
     }
-    if (!dadosPedidos.length) {
-      setSupabaseFeedback("Nenhum pedido carregado. Importe um CSV primeiro.", true);
+    
+    return record;
+  });
+}
+
+async function enviarPedidosParaSupabase() {
+  if (!supabaseClient) {
+    if (!saveSupabaseConfigToLocal()) {
+      setSupabaseFeedback("Configure e salve as credenciais do Supabase primeiro.", true);
       return;
     }
-
-    const tableName = supabaseTableInput.value.trim() || "pedidos";
-    const dbRecords = convertToDatabaseRecords(dadosPedidos);
-    const withOS = dbRecords.filter(r => r.os && r.os.toString().trim() !== "");
-    const withoutOS = dbRecords.filter(r => !r.os || r.os.toString().trim() === "");
-
-    sendToSupabaseBtn.disabled = true;
-    const originalText = sendToSupabaseBtn.innerHTML;
-    sendToSupabaseBtn.innerHTML = "⏳ Enviando...";
-
-    try {
-      let upsertError = null, insertError = null;
-      let totalUpserted = 0, totalInserted = 0;
-
-      if (withOS.length) {
-        const { error } = await supabaseClient.from(tableName).upsert(withOS, { onConflict: 'os', ignoreDuplicates: false });
-        if (error) upsertError = error;
-        else totalUpserted = withOS.length;
-      }
-      if (withoutOS.length) {
-        const { error } = await supabaseClient.from(tableName).insert(withoutOS);
-        if (error) insertError = error;
-        else totalInserted = withoutOS.length;
-      }
-
-      if (upsertError && insertError) throw new Error(`UPSERT: ${upsertError.message} | INSERT: ${insertError.message}`);
-      if (upsertError) throw new Error(`Erro no UPSERT: ${upsertError.message}`);
-      if (insertError) throw new Error(`Erro no INSERT: ${insertError.message}`);
-
-      setSupabaseFeedback(`✅ Sucesso! ${totalUpserted} upserts (com OS) + ${totalInserted} inserts (sem OS).`, false, true);
-      setLogMessage(`${totalUpserted + totalInserted} registros enviados ao Supabase.`);
-    } catch (err) {
-      setSupabaseFeedback(`Erro: ${err.message}`, true);
-    } finally {
-      sendToSupabaseBtn.innerHTML = originalText;
-      sendToSupabaseBtn.disabled = false;
-    }
   }
+  if (!dadosPedidos.length) {
+    setSupabaseFeedback("Nenhum pedido carregado. Importe um CSV primeiro.", true);
+    return;
+  }
+
+  const tableName = supabaseTableInput.value.trim() || "pedidos";
+  
+  sendToSupabaseBtn.disabled = true;
+  const originalText = sendToSupabaseBtn.innerHTML;
+  sendToSupabaseBtn.innerHTML = "⏳ Enviando...";
+
+  try {
+    const dbRecords = convertToDatabaseRecords(dadosPedidos);
+    
+    // Verificar duplicatas de OS apenas para aviso, não para impedir
+    const osComDuplicatas = dbRecords
+      .filter(r => r.os)
+      .map(r => r.os)
+      .filter((os, index, self) => self.indexOf(os) !== index);
+    
+    if (osComDuplicatas.length) {
+      console.warn(`⚠️ Atenção: ${osComDuplicatas.length} OS duplicadas encontradas. Todas serão inseridas.`);
+    }
+
+    const { data, error } = await supabaseClient
+      .from(tableName)
+      .insert(dbRecords);
+
+    if (error) {
+      // Se o erro for de chave duplicada, tentar inserir um por um
+      if (error.message.includes("duplicate key") || error.code === "23505") {
+        setSupabaseFeedback("⚠️ Detectadas OS duplicadas. Enviando registros individualmente...", false);
+        
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
+        
+        for (let i = 0; i < dbRecords.length; i++) {
+          const record = dbRecords[i];
+          const { error: singleError } = await supabaseClient
+            .from(tableName)
+            .insert(record);
+          
+          if (singleError) {
+            errorCount++;
+            errors.push(`Registro ${i+1}: ${singleError.message}`);
+          } else {
+            successCount++;
+          }
+        }
+        
+        if (errorCount > 0) {
+          setSupabaseFeedback(`⚠️ Parcial: ${successCount} ok, ${errorCount} falhas. ${errors[0]}`, true);
+          setLogMessage(`${successCount} enviados, ${errorCount} com erro.`);
+        } else {
+          setSupabaseFeedback(`✅ Sucesso! ${successCount} registros enviados.`, false, true);
+          setLogMessage(`${successCount} registros enviados ao Supabase.`);
+        }
+      } else {
+        throw new Error(error.message);
+      }
+    } else {
+      setSupabaseFeedback(`✅ Sucesso! ${dbRecords.length} registros enviados.`, false, true);
+      setLogMessage(`${dbRecords.length} registros enviados ao Supabase.`);
+    }
+
+  } catch (err) {
+    setSupabaseFeedback(`Erro: ${err.message}`, true);
+  } finally {
+    sendToSupabaseBtn.innerHTML = originalText;
+    sendToSupabaseBtn.disabled = false;
+  }
+}
 
   // ======================== PROCESSAMENTO CSV ========================
   function detectDelimiter(firstLine) {
